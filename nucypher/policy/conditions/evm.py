@@ -16,7 +16,7 @@
 """
 
 import re
-from typing import Any, List, Optional, Tuple, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 from eth_typing import ChecksumAddress
 from eth_utils import to_checksum_address
@@ -30,7 +30,6 @@ from nucypher.policy.conditions._utils import CamelCaseSchema
 from nucypher.policy.conditions.base import ReencryptionCondition
 from nucypher.policy.conditions.context import get_context_value, is_context_variable
 from nucypher.policy.conditions.lingo import ReturnValueTest
-
 
 # Permitted blockchains for condition evaluation
 _CONDITION_CHAINS = (
@@ -222,7 +221,7 @@ class ContractCondition(RPCCondition):
         SKIP_VALUES = (None,)
         standard_contract_type = fields.Str(required=False)
         contract_address = fields.Str(required=True)
-        function_abi = fields.Str(required=False)
+        function_abi = fields.Dict(required=False)
 
         @post_load
         def make(self, data, **kwargs):
@@ -268,7 +267,7 @@ class ContractCondition(RPCCondition):
         """Gets an unbound contract function to evaluate for this condition"""
         try:
             contract = self.w3.eth.contract(
-                address=self.contract_address, abi=self.function_abi
+                address=self.contract_address, abi=[self.function_abi]
             )
             contract_function = getattr(contract.functions, self.method)
             return contract_function
