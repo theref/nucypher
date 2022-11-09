@@ -131,6 +131,16 @@ class RPCCondition(ReencryptionCondition):
         'eth_getBalance',
     )  # TODO other allowed methods (tDEC #64)
 
+    class RPCExecutionFailed(ReencryptionCondition.ConditionEvaluationFailed):
+        """Raised when an exception is raised from an RPC call."""
+
+    class NoConnectionToChain(RuntimeError):
+        """Raised when a node does not have an associated provider for a chain."""
+
+        def __init__(self, chain: int, *args, **kwargs):
+            self.chain = chain
+            super().__init__(*args, **kwargs)
+
     class Schema(CamelCaseSchema):
         name = fields.Str(required=False)
         chain = fields.Int(required=True)

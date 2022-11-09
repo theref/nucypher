@@ -21,7 +21,7 @@ import base64
 import json
 import operator as pyoperator
 from hashlib import md5
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Union
 
 from marshmallow import fields, post_load
 
