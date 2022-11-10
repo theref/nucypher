@@ -55,7 +55,8 @@ def _resolve_abi(
     """Resolves the contract an/or function ABI from a standard contract name"""
 
     if not (function_abi or standard_contract_type):
-        raise ReencryptionCondition.InvalidCondition(
+        # TODO: Is this protection needed?
+        raise InvalidCondition(
             f"Ambiguous ABI - Supply either an ABI or a standard contract type ({STANDARD_ABI_CONTRACT_TYPES})."
         )
 
@@ -130,16 +131,6 @@ class RPCCondition(ReencryptionCondition):
         # RPC
         'eth_getBalance',
     )  # TODO other allowed methods (tDEC #64)
-
-    class RPCExecutionFailed(ReencryptionCondition.ConditionEvaluationFailed):
-        """Raised when an exception is raised from an RPC call."""
-
-    class NoConnectionToChain(RuntimeError):
-        """Raised when a node does not have an associated provider for a chain."""
-
-        def __init__(self, chain: int, *args, **kwargs):
-            self.chain = chain
-            super().__init__(*args, **kwargs)
 
     class Schema(CamelCaseSchema):
         name = fields.Str(required=False)

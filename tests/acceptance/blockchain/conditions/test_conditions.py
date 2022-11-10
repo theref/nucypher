@@ -33,7 +33,10 @@ from nucypher.policy.conditions.evm import RPCCondition, get_context_value
 from nucypher.policy.conditions.exceptions import (
     ContextVariableVerificationFailed,
     InvalidContextVariableData,
+<<<<<<< HEAD
     NoConnectionToChain,
+=======
+>>>>>>> a3a5d47a4 (Move condition-related exceptions to an exceptions module.)
     RequiredContextVariable,
     RPCExecutionFailed,
 )

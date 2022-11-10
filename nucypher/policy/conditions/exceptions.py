@@ -15,7 +15,6 @@
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 # Connectivity
 class NoConnectionToChain(RuntimeError):
     """Raised when a node does not have an associated provider for a chain."""

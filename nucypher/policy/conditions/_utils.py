@@ -31,7 +31,6 @@ from nucypher.policy.conditions.exceptions import (
     NoConnectionToChain,
     RequiredContextVariable,
 )
-from nucypher.policy.conditions.evm import RPCCondition
 from nucypher.utilities.logging import Logger
 
 _ETH = 'eth_'
