@@ -73,10 +73,8 @@ def validate_grant_command(
             message = '--bob cannot be used with --bob-encrypting-key or --bob-verifying key'
             raise click.BadOptionUsage(option_name='--bob', message=message)
 
-    # From hex public keys
-    else:
-        if not all((bob_encrypting_key, bob_verifying_key)):
-            if force:
-                emitter.message('Missing options in force mode: --bob or --bob-encrypting-key and --bob-verifying-key.')
-                click.Abort()
-            emitter.message("*Caution: Only enter public keys*")
+    elif not all((bob_encrypting_key, bob_verifying_key)):
+        if force:
+            emitter.message('Missing options in force mode: --bob or --bob-encrypting-key and --bob-verifying-key.')
+            click.Abort()
+        emitter.message("*Caution: Only enter public keys*")

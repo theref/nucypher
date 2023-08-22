@@ -170,8 +170,7 @@ class BaseConfiguration(ABC):
         ```
 
         """
-        payload = dict(config_root=self.config_root)
-        return payload
+        return dict(config_root=self.config_root)
 
     @classmethod
     def generate_filename(cls, modifier: str = None) -> str:
@@ -184,8 +183,7 @@ class BaseConfiguration(ABC):
         name = cls.NAME.lower()
         if modifier:
             name += f'-{modifier}'
-        filename = f'{name}.{cls._CONFIG_FILE_EXTENSION.lower()}'
-        return filename
+        return f'{name}.{cls._CONFIG_FILE_EXTENSION.lower()}'
 
     @classmethod
     def default_filepath(cls, config_root: Optional[Path] = None) -> Path:
@@ -195,8 +193,7 @@ class BaseConfiguration(ABC):
         :return: The generated filepath string
         """
         filename = cls.generate_filename()
-        default_path = (config_root or cls.DEFAULT_CONFIG_ROOT) / filename
-        return default_path
+        return (config_root or cls.DEFAULT_CONFIG_ROOT) / filename
 
     def generate_filepath(self, filepath: Optional[Path] = None, modifier: str = None, override: bool = False) -> Path:
         """
@@ -258,8 +255,7 @@ class BaseConfiguration(ABC):
     def from_configuration_file(cls, filepath: Optional[Path] = None, **overrides) -> 'BaseConfiguration':
         filepath = filepath or cls.default_filepath()
         payload = cls._read_configuration_file(filepath=filepath)
-        instance = cls(filepath=filepath, **payload, **overrides)
-        return instance
+        return cls(filepath=filepath, **payload, **overrides)
 
     @classmethod
     def _read_configuration_file(cls, filepath: Path) -> dict:
@@ -439,10 +435,10 @@ class CharacterConfiguration(BaseConfiguration):
         if registry and registry_filepath:
             if registry.filepath != registry_filepath:
                 error = f"Inconsistent registry filepaths for '{registry.filepath.absolute()}'" \
-                        f" and '{registry_filepath.absolute()}'."
+                            f" and '{registry_filepath.absolute()}'."
                 raise ValueError(error)
             else:
-                self.log.warn(f"Registry and registry filepath were both passed.")
+                self.log.warn("Registry and registry filepath were both passed.")
         self.registry = registry or NO_BLOCKCHAIN_CONNECTION.bool_value(False)
         self.registry_filepath = registry_filepath or UNINITIALIZED_CONFIGURATION
 
@@ -509,10 +505,6 @@ class CharacterConfiguration(BaseConfiguration):
             self.payment_network = payment_network
             self.payment_provider = payment_provider
 
-        #
-        # Decentralized
-        #
-
         else:
             self.gas_strategy = gas_strategy
             self.max_gas_price = max_gas_price  # gwei
@@ -530,7 +522,7 @@ class CharacterConfiguration(BaseConfiguration):
             if not self.registry:
                 # TODO: These two code blocks are untested.
                 if not self.registry_filepath:  # TODO: Registry URI  (goerli://speedynet.json) :-)
-                    self.log.info(f"Fetching latest registry from source.")
+                    self.log.info("Fetching latest registry from source.")
                     self.registry = InMemoryContractRegistry.from_latest_publication(network=self.domain)
                 else:
                     self.registry = LocalContractRegistry(filepath=self.registry_filepath)
@@ -555,7 +547,7 @@ class CharacterConfiguration(BaseConfiguration):
                 # TODO: Dedupe
                 if not self.policy_registry:
                     if not self.policy_registry_filepath:
-                        self.log.info(f"Fetching latest policy registry from source.")
+                        self.log.info("Fetching latest policy registry from source.")
                         self.policy_registry = InMemoryContractRegistry.from_latest_publication(network=self.payment_network)
                     else:
                         self.policy_registry = LocalContractRegistry(filepath=self.policy_registry_filepath)
@@ -574,7 +566,7 @@ class CharacterConfiguration(BaseConfiguration):
         # Network
         self.controller_port = controller_port or self.DEFAULT_CONTROLLER_PORT
         self.network_middleware = network_middleware or self.DEFAULT_NETWORK_MIDDLEWARE(registry=self.registry)
-        
+
         super().__init__(filepath=self.config_file_location, config_root=self.config_root)
 
     def __call__(self, **character_kwargs):

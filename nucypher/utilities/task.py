@@ -59,6 +59,4 @@ class SimpleTask(ABC):
 
     @staticmethod
     def clean_traceback(failure: Failure) -> str:
-        # FIXME: Amazing.
-        cleaned_traceback = failure.getTraceback().replace('{', '').replace('}', '')
-        return cleaned_traceback
+        return failure.getTraceback().replace('{', '').replace('}', '')

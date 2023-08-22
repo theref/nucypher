@@ -63,8 +63,7 @@ def exec_bond(click_runner, operator_address: ChecksumAddress, staking_provider_
                '--signer', TEST_ETH_PROVIDER_URI,
                '--force'  # non-interactive only
                )
-    result = click_runner.invoke(bond, command, catch_exceptions=False, env=cli_env)
-    return result
+    return click_runner.invoke(bond, command, catch_exceptions=False, env=cli_env)
 
 
 def exec_unbond(click_runner, staking_provider_address: ChecksumAddress):
@@ -74,8 +73,9 @@ def exec_unbond(click_runner, staking_provider_address: ChecksumAddress):
                '--signer', TEST_ETH_PROVIDER_URI,
                '--force'  # non-interactive only
                )
-    result = click_runner.invoke(unbond, command, catch_exceptions=False, env=cli_env)
-    return result
+    return click_runner.invoke(
+        unbond, command, catch_exceptions=False, env=cli_env
+    )
 
 
 @pytest.mark.usefixtures('test_registry_source_manager', 'mock_contract_agency', 'patch_keystore')

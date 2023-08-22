@@ -74,7 +74,9 @@ class PolicyBaseSchema(BaseSchema):
     def check_valid_n_and_m(self, data, **kwargs):
         # ensure that n is greater than or equal to m
         if not (0 < data['threshold'] <= data['shares']):
-            raise InvalidArgumentCombo(f"`shares` and `threshold` must satisfy 0 < threshold ≤ shares")
+            raise InvalidArgumentCombo(
+                "`shares` and `threshold` must satisfy 0 < threshold ≤ shares"
+            )
 
     @validates_schema
     def check_rate_or_value_not_both(self, data, **kwargs):

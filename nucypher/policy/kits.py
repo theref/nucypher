@@ -79,7 +79,7 @@ class RetrievalResult:
 
     def canonical_addresses(self) -> Set[bytes]:
         # TODO (#1995): propagate this to use canonical addresses everywhere
-        return set([to_canonical_address(address) for address in self.cfrags])
+        return {to_canonical_address(address) for address in self.cfrags}
 
     def with_result(self, result: 'RetrievalResult') -> 'RetrievalResult':
         """
@@ -92,5 +92,5 @@ class RetrievalResult:
 
         # TODO: check for overlap?
         new_cfrags = dict(self.cfrags)
-        new_cfrags.update(result.cfrags)
+        new_cfrags |= result.cfrags
         return RetrievalResult(cfrags=new_cfrags)

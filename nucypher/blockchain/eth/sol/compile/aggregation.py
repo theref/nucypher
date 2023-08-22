@@ -69,8 +69,9 @@ def extract_version(compiled_contract_outputs: dict) -> str:
         # ---------
         # If this block is reached, the compiler did not produce results for devdoc at all.
         # Ensure 'devdoc' is listed in `CONTRACT_OUTPUTS` and that solc is the latest version.
-        raise CompilationError(f'Solidity compiler did not output devdoc.'
-                               f'Check the contract output compiler settings.')
+        raise CompilationError(
+            'Solidity compiler did not output devdoc.Check the contract output compiler settings.'
+        )
     else:
         title = devdoc.get('title', '')
 
@@ -78,14 +79,10 @@ def extract_version(compiled_contract_outputs: dict) -> str:
         devdoc_details: str = devdoc['details']
     except KeyError:
         # This is acceptable behaviour, most likely an un-versioned contract
-        SOLC_LOGGER.debug(f'No solidity source version specified.')
+        SOLC_LOGGER.debug('No solidity source version specified.')
         return DEFAULT_VERSION_STRING
 
-    # RE Full Match
-    raw_matches = DEVDOC_VERSION_PATTERN.fullmatch(devdoc_details)
-
-    # Positive match(es)
-    if raw_matches:
+    if raw_matches := DEVDOC_VERSION_PATTERN.fullmatch(devdoc_details):
         matches = raw_matches.groups()
         if len(matches) != 1:  # sanity check
             # Severe Edge Case
@@ -97,8 +94,7 @@ def extract_version(compiled_contract_outputs: dict) -> str:
             # This most likely means there is a programming error
             # in the `VERSION_PATTERN` regular expression or the surrounding logic.
             raise ProgrammingError(f"Multiple version matches in {title} devdoc.")
-        version = matches[0]  # good match
-        return version        # OK
+        return matches[0]
     else:
         # Negative match: Devdoc included without a version
         SOLC_LOGGER.debug(f"Contract {title} not versioned.")
@@ -118,7 +114,7 @@ def validate_merge(existing_version: CompiledContractOutputs,
             # ideally use a proper CBOR parser
             existing_bytecode = METADATA_HASH_PATTERN.sub('', existing_version['evm']['bytecode']['object'])
             new_bytecode = METADATA_HASH_PATTERN.sub('', new_version['evm']['bytecode']['object'])
-            if not existing_bytecode == new_bytecode:
+            if existing_bytecode != new_bytecode:
                 message = f"Two solidity sources ({new_title}, {existing_title}) specify version '{version_specifier}' " \
                           "but have different compiled bytecode. Ensure that the devdoc version is " \
                           "accurately updated before trying again."
@@ -130,7 +126,7 @@ def merge_contract_sources(*compiled_sources):
 
 
 def merge_contract_outputs(*compiled_versions) -> VersionedContractOutputs:
-    versioned_outputs = dict()
+    versioned_outputs = {}
 
     for bundle in compiled_versions:
 

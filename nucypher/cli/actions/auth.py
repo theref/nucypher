@@ -49,10 +49,11 @@ def get_password_from_prompt(prompt: str = GENERIC_PASSWORD_PROMPT, envvar: str 
 @validate_checksum_address
 def get_client_password(checksum_address: str, envvar: str = None, confirm: bool = False) -> str:
     """Interactively collect an ethereum client password"""
-    client_password = get_password_from_prompt(prompt=COLLECT_ETH_PASSWORD.format(checksum_address=checksum_address),
-                                               envvar=envvar,
-                                               confirm=confirm)
-    return client_password
+    return get_password_from_prompt(
+        prompt=COLLECT_ETH_PASSWORD.format(checksum_address=checksum_address),
+        envvar=envvar,
+        confirm=confirm,
+    )
 
 
 def unlock_signer_account(config: CharacterConfiguration, json_ipc: bool) -> None:
@@ -84,8 +85,7 @@ def get_nucypher_password(emitter, confirm: bool = False, envvar=NUCYPHER_ENVVAR
     if confirm:
         emitter.message(PASSWORD_COLLECTION_NOTICE)
         prompt += f" ({Keystore._MINIMUM_PASSWORD_LENGTH} character minimum)"
-    keystore_password = get_password_from_prompt(prompt=prompt, confirm=confirm, envvar=envvar)
-    return keystore_password
+    return get_password_from_prompt(prompt=prompt, confirm=confirm, envvar=envvar)
 
 
 def unlock_nucypher_keystore(emitter: StdoutEmitter, password: str, character_configuration: CharacterConfiguration) -> bool:

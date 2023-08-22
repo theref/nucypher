@@ -33,18 +33,16 @@ from pathlib import Path
 def get_solc_config_path() -> Path:
     # Note: This script is sensitive to the working directory.
     nucypher = Path(__file__).parent.parent.parent.resolve() / 'nucypher'
-    config_path = nucypher / 'blockchain' / 'eth' / 'sol' / '__conf__.py'
-    return config_path
+    return nucypher / 'blockchain' / 'eth' / 'sol' / '__conf__.py'
 
 
 def get_packaged_solc_version() -> str:
     """Returns the solidity version specified in the embedded configuration file"""
     solc_config = get_solc_config_path()
-    metadata = dict()
+    metadata = {}
     with open(str(solc_config)) as f:
         exec(f.read(), metadata)  # noqa
-    version = metadata['SOLIDITY_COMPILER_VERSION']
-    return version
+    return metadata['SOLIDITY_COMPILER_VERSION']
 
 
 def get_solc_version() -> str:
@@ -72,8 +70,7 @@ def install_solc(version: str) -> None:
     try:
         from solcx import install_solc, set_solc_version
     except ImportError:
-        error = f"Failed to install solc, py-solc-x  is not found. " \
-                f"Install with 'pip install py-solc-x' and try again."
+        error = "Failed to install solc, py-solc-x  is not found. Install with 'pip install py-solc-x' and try again."
         raise ImportError(error)
 
     install_solc(version)

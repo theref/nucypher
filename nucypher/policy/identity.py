@@ -107,8 +107,7 @@ class Card:
     def __repr__(self) -> str:
         name = self.nickname or f'{self.__character_class.__name__}'
         short_key = bytes(self.__verifying_key).hex()[:6]
-        r = f'{self.__class__.__name__}({name}:{short_key}:{self.id.hex()[:6]})'
-        return r
+        return f'{self.__class__.__name__}({name}:{short_key}:{self.id.hex()[:6]})'
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):
@@ -156,8 +155,7 @@ class Card:
         ]
         if self.character is Bob:
             elements.append(self.__encrypting_key)
-        payload = b''.join(bytes(e) for e in elements)
-        return payload
+        return b''.join(bytes(e) for e in elements)
 
     @classmethod
     def from_bytes(cls, card_bytes: bytes) -> 'Card':
@@ -201,20 +199,20 @@ class Card:
 
     @classmethod
     def from_dict(cls, card: Dict):
-        instance = cls(nickname=card.get('nickname'),
-                       verifying_key=card['verifying_key'],
-                       encrypting_key=card['encrypting_key'],
-                       character_flag=card['character'])
-        return instance
+        return cls(
+            nickname=card.get('nickname'),
+            verifying_key=card['verifying_key'],
+            encrypting_key=card['encrypting_key'],
+            character_flag=card['character'],
+        )
 
     def to_dict(self) -> Dict:
-        payload = dict(
+        return dict(
             nickname=self.__nickname,
             verifying_key=self.verifying_key,
             encrypting_key=self.encrypting_key,
-            character=self.__character_flag
+            character=self.__character_flag,
         )
-        return payload
 
     def describe(self, truncate: int = TRUNCATE) -> Dict:
         description = dict(
@@ -241,11 +239,12 @@ class Card:
     @classmethod
     def from_character(cls, character: Character, nickname: Optional[str] = None) -> 'Card':
         flag = getattr(constant_sorrow.constants, character.__class__.__name__.upper())
-        instance = cls(verifying_key=character.public_keys(power_up_class=SigningPower),
-                       encrypting_key=character.public_keys(power_up_class=DecryptingPower),
-                       character_flag=bytes(flag),
-                       nickname=nickname)
-        return instance
+        return cls(
+            verifying_key=character.public_keys(power_up_class=SigningPower),
+            encrypting_key=character.public_keys(power_up_class=DecryptingPower),
+            character_flag=bytes(flag),
+            nickname=nickname,
+        )
 
     #
     # Card API
@@ -287,8 +286,7 @@ class Card:
     def filepath(self) -> Path:
         identifier = f'{self.nickname}{self.__DELIMITER}{self.id.hex()}' if self.__nickname else self.id.hex()
         filename = f'{identifier}.{self.__FILE_EXTENSION}'
-        filepath = self.CARD_DIR / filename
-        return filepath
+        return self.CARD_DIR / filename
 
     @property
     def is_saved(self) -> bool:
@@ -318,8 +316,7 @@ class Card:
             filename = filenames[0]
         else:
             raise ValueError(f'Ambiguous card nickname: {nickname}. Try using card ID instead.')
-        filepath = card_dir / filename
-        return filepath
+        return card_dir / filename
 
     @classmethod
     def load(cls,
@@ -332,7 +329,7 @@ class Card:
         if not card_dir:
             card_dir = cls.CARD_DIR
         if filepath and identifier:
-            raise ValueError(f'Pass either filepath or identifier, not both.')
+            raise ValueError('Pass either filepath or identifier, not both.')
         if not filepath:
             filepath = cls.lookup(identifier=identifier, card_dir=card_dir)
         try:
@@ -340,8 +337,7 @@ class Card:
                 card_bytes = decoder(file.read())
         except FileNotFoundError:
             raise cls.UnknownCard
-        instance = cls.from_bytes(card_bytes)
-        return instance
+        return cls.from_bytes(card_bytes)
 
     def delete(self) -> None:
         self.filepath.unlink()

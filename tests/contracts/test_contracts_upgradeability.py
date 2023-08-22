@@ -130,23 +130,18 @@ def deploy_base_contract(blockchain_interface: BlockchainDeployerInterface,
     contract_name = deployer.contract_name
     latest_version, _data = blockchain_interface.find_raw_contract_data(contract_name, "latest")
     raw_contracts = blockchain_interface._raw_contract_cache
-    overrides = dict()
+    overrides = {}
     if len(raw_contracts[contract_name]) != 1:
-        try:
+        with contextlib.suppress(KeyError):
             overrides_func = CONSTRUCTOR_OVERRIDES[contract_name][latest_version]
             overrides = overrides_func(blockchain_interface,
                                        transacting_power,
                                        deployer)
-        except KeyError:
-            pass
-
     version = "latest" if skipt_test else "earliest"
-    try:
+    with contextlib.suppress(ValidationError):
         deployer.deploy(transacting_power=transacting_power,
                         contract_version=version,
                         deployment_mode=constants.FULL, **overrides)
-    except ValidationError:
-        pass  # Skip errors related to initialization
 
 
 def skip_test(blockchain_interface: BlockchainDeployerInterface, contract_name: str):

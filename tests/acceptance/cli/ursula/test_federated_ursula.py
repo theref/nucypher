@@ -108,7 +108,9 @@ def test_configuration_file_contents(custom_filepath: Path, nominal_federated_co
         try:
             data = json.loads(raw_contents)
         except JSONDecodeError:
-            raise pytest.fail(msg="Invalid JSON configuration file {}".format(custom_config_filepath))
+            raise pytest.fail(
+                msg=f"Invalid JSON configuration file {custom_config_filepath}"
+            )
 
         for field in nominal_federated_configuration_fields:
             assert field in data, "Missing field '{}' from configuration file."
@@ -116,7 +118,9 @@ def test_configuration_file_contents(custom_filepath: Path, nominal_federated_co
                 path = data[field]
                 user_data_dir = APP_DIR.user_data_dir
                 # assert os.path.exists(path), '{} does not exist'.format(path)
-                assert user_data_dir not in path, '{} includes default appdir path {}'.format(field, user_data_dir)
+                assert (
+                    user_data_dir not in path
+                ), f'{field} includes default appdir path {user_data_dir}'
 
     assert custom_config_filepath.is_file(), 'Configuration file does not exist'
 
@@ -130,9 +134,12 @@ def test_ursula_view_configuration(custom_filepath: Path, click_runner, nominal_
     view_args = ('ursula', 'config', '--config-file', str(custom_config_filepath.absolute()))
 
     # View the configuration
-    result = click_runner.invoke(nucypher_cli, view_args,
-                                 input='{}\n'.format(INSECURE_DEVELOPMENT_PASSWORD),
-                                 catch_exceptions=False)
+    result = click_runner.invoke(
+        nucypher_cli,
+        view_args,
+        input=f'{INSECURE_DEVELOPMENT_PASSWORD}\n',
+        catch_exceptions=False,
+    )
 
     # CLI Output
     assert str(MOCK_CUSTOM_INSTALLATION_PATH) in result.output
@@ -156,9 +163,12 @@ def test_run_federated_ursula_from_config_file(custom_filepath: Path, click_runn
                 '--lonely',
                 '--config-file', str(custom_config_filepath.absolute()))
 
-    result = click_runner.invoke(nucypher_cli, run_args,
-                                 input='{}\nY\n'.format(INSECURE_DEVELOPMENT_PASSWORD),
-                                 catch_exceptions=False)
+    result = click_runner.invoke(
+        nucypher_cli,
+        run_args,
+        input=f'{INSECURE_DEVELOPMENT_PASSWORD}\nY\n',
+        catch_exceptions=False,
+    )
 
     # CLI Output
     assert result.exit_code == 0, result.output

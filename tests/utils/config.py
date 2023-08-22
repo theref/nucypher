@@ -58,9 +58,7 @@ def assemble(federated: bool,
                           known_nodes=known_nodes,
                           checksum_address=checksum_address)
 
-    # Combine and return
-    base_test_params = dict(**TEST_CHARACTER_CONFIG_BASE_PARAMS, **runtime_params)
-    return base_test_params
+    return dict(**TEST_CHARACTER_CONFIG_BASE_PARAMS, **runtime_params)
 
 
 def make_ursula_test_configuration(rest_port: int = MOCK_URSULA_STARTING_PORT,
@@ -71,12 +69,13 @@ def make_ursula_test_configuration(rest_port: int = MOCK_URSULA_STARTING_PORT,
     federated = test_params['federated_only']
     payment_provider = payment_provider if not federated else None
     payment_network = TEMPORARY_DOMAIN if not federated else None
-    ursula_config = UrsulaConfiguration(**test_params,
-                                        rest_port=rest_port,
-                                        payment_provider=payment_provider,
-                                        payment_network=payment_network,
-                                        policy_registry=test_params['registry'])
-    return ursula_config
+    return UrsulaConfiguration(
+        **test_params,
+        rest_port=rest_port,
+        payment_provider=payment_provider,
+        payment_network=payment_network,
+        policy_registry=test_params['registry']
+    )
 
 
 def make_alice_test_configuration(payment_provider: str = None,
@@ -85,14 +84,14 @@ def make_alice_test_configuration(payment_provider: str = None,
     federated = test_params['federated_only']
     payment_provider = payment_provider if not federated else None
     payment_network = TEMPORARY_DOMAIN if not federated else None
-    config = AliceConfiguration(**test_params,
-                                payment_provider=payment_provider,
-                                payment_network=payment_network,
-                                policy_registry=test_params['registry'])
-    return config
+    return AliceConfiguration(
+        **test_params,
+        payment_provider=payment_provider,
+        payment_network=payment_network,
+        policy_registry=test_params['registry']
+    )
 
 
 def make_bob_test_configuration(**assemble_kwargs) -> BobConfiguration:
     test_params = assemble(**assemble_kwargs)
-    config = BobConfiguration(**test_params)
-    return config
+    return BobConfiguration(**test_params)

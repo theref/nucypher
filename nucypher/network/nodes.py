@@ -302,7 +302,7 @@ class Learner:
             node_storage.store_node_certificate)  # TODO: Fix this temporary workaround for on-disk cert storage.  #1481
 
         known_nodes = known_nodes or tuple()
-        self.unresponsive_startup_nodes = list()  # TODO: Buckets - Attempt to use these again later  #567
+        self.unresponsive_startup_nodes = []
         for node in known_nodes:
             try:
                 self.remember_node(node, eager=True, record_fleet_state=False)
@@ -372,9 +372,7 @@ class Learner:
 
         for seednode_metadata in self._seed_nodes:
 
-            node_tag = "{}|{}:{}".format(seednode_metadata.checksum_address,
-                                         seednode_metadata.rest_host,
-                                         seednode_metadata.rest_port)
+            node_tag = f"{seednode_metadata.checksum_address}|{seednode_metadata.rest_host}:{seednode_metadata.rest_port}"
 
             self.log.debug(f"Seeding from: {node_tag}")
 
@@ -473,7 +471,9 @@ class Learner:
                 return False
 
             except RestMiddleware.Unreachable:
-                self.log.info("No Response while trying to verify node {}|{}".format(node.rest_interface, node))
+                self.log.info(
+                    f"No Response while trying to verify node {node.rest_interface}|{node}"
+                )
                 # TODO: Bucket this node as "ghost" or something: somebody else knows about it, but we can't get to it.  567
                 return False
 
@@ -483,7 +483,7 @@ class Learner:
                     f'StakingProvider:Operator {node.checksum_address}:{node.operator_address} is not actively staking, skipping.')
                 return False
 
-            # TODO: What about InvalidNode?  (for that matter, any SuspiciousActivity)  1714, 567 too really
+                # TODO: What about InvalidNode?  (for that matter, any SuspiciousActivity)  1714, 567 too really
 
         if record_fleet_state:
             self.known_nodes.record_fleet_state()
@@ -548,16 +548,14 @@ class Learner:
 
         failure.raiseException()
         # TODO: We don't actually have checksum_address at this level - maybe only Characters can crash gracefully :-)  1711
-        self.log.critical("{} crashed with {}".format(self.checksum_address, failure))
+        self.log.critical(f"{self.checksum_address} crashed with {failure}")
         reactor.stop()
 
     def select_teacher_nodes(self):
-        nodes_we_know_about = self.known_nodes.shuffled()
-
-        if not nodes_we_know_about:
+        if nodes_we_know_about := self.known_nodes.shuffled():
+            self.teacher_nodes.extend(nodes_we_know_about)
+        else:
             raise self.NotEnoughTeachers("Need some nodes to start learning from.")
-
-        self.teacher_nodes.extend(nodes_we_know_about)
 
     def cycle_teacher_node(self):
         if not self.teacher_nodes:
@@ -567,7 +565,7 @@ class Learner:
         except IndexError:
             error = "Not enough nodes to select a good teacher, Check your network connection then node configuration"
             raise self.NotEnoughTeachers(error)
-        self.log.debug("Cycled teachers; New teacher is {}".format(self._current_teacher_node))
+        self.log.debug(f"Cycled teachers; New teacher is {self._current_teacher_node}")
 
     def current_teacher_node(self, cycle=False):
         if cycle:
@@ -576,9 +574,7 @@ class Learner:
         if not self._current_teacher_node:
             self.cycle_teacher_node()
 
-        teacher = self._current_teacher_node
-
-        return teacher
+        return self._current_teacher_node
 
     def learn_about_nodes_now(self, force=False):
         if self._learning_task.running:
@@ -587,7 +583,7 @@ class Learner:
         elif not force:
             self.log.warn(
                 "Learning loop isn't started; can't learn about nodes now.  You can override this with force=True.")
-        elif force:
+        else:
             # TODO: What if this has been stopped?
             self.log.info("Learning loop wasn't started; forcing start now.")
             self._learning_task.start(self._SHORT_LEARNING_DELAY, now=True)
@@ -634,7 +630,7 @@ class Learner:
             rounds_undertaken = self._learning_round - starting_round
             if len(self.known_nodes) >= number_of_nodes_to_know:
                 if rounds_undertaken:
-                    self.log.info("Learned about enough nodes after {} rounds.".format(rounds_undertaken))
+                    self.log.info(f"Learned about enough nodes after {rounds_undertaken} rounds.")
                 return True
 
             if not self._learning_task.running:
@@ -659,8 +655,9 @@ class Learner:
                     raise RuntimeError(
                         f"The reactor isn't running, but you're trying to use it for discovery.  You need to start the Reactor in order to use {self} this way.")
                 else:
-                    raise self.NotEnoughNodes("After {} seconds and {} rounds, didn't find {} nodes".format(
-                        timeout, rounds_undertaken, number_of_nodes_to_know))
+                    raise self.NotEnoughNodes(
+                        f"After {timeout} seconds and {rounds_undertaken} rounds, didn't find {number_of_nodes_to_know} nodes"
+                    )
             else:
                 time.sleep(.1)
 
@@ -680,7 +677,7 @@ class Learner:
             rounds_undertaken = self._learning_round - starting_round
             if addresses.issubset(self.known_nodes.addresses()):
                 if rounds_undertaken:
-                    self.log.info("Learned about all nodes after {} rounds.".format(rounds_undertaken))
+                    self.log.info(f"Learned about all nodes after {rounds_undertaken} rounds.")
                 return True
 
             if learn_on_this_thread:
@@ -697,8 +694,8 @@ class Learner:
                     return False
                 else:
                     raise self.NotEnoughTeachers(
-                        "After {} seconds and {} rounds, didn't find these {} nodes: {}".format(
-                            timeout, rounds_undertaken, len(still_unknown), still_unknown))
+                        f"After {timeout} seconds and {rounds_undertaken} rounds, didn't find these {len(still_unknown)} nodes: {still_unknown}"
+                    )
             else:
                 time.sleep(.1)
 
@@ -715,9 +712,9 @@ class Learner:
         else:
             self._rounds_without_new_nodes += 1
             if self._rounds_without_new_nodes > self._ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN:
-                self.log.info("After {} rounds with no new nodes, it's time to slow down to {} seconds.".format(
-                    self._ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN,
-                    self._LONG_LEARNING_DELAY))
+                self.log.info(
+                    f"After {self._ROUNDS_WITHOUT_NODES_AFTER_WHICH_TO_SLOW_DOWN} rounds with no new nodes, it's time to slow down to {self._LONG_LEARNING_DELAY} seconds."
+                )
                 self._learning_task.interval = self._LONG_LEARNING_DELAY
 
     def network_bootstrap(self, node_list: list) -> None:
@@ -754,7 +751,7 @@ class Learner:
                     raise self.node_class.InvalidNode(
                         f"Expected to connect to {stranger}, got {node_on_the_other_end} instead.")
                 else:
-                    raise InvalidSignature("Signature for message isn't valid: {}".format(signature))
+                    raise InvalidSignature(f"Signature for message isn't valid: {signature}")
             except (TypeError, AttributeError):
                 raise InvalidSignature(f"Unable to verify message from stranger: {stranger}")
 
@@ -782,11 +779,7 @@ class Learner:
 
         current_teacher = self.current_teacher_node()  # Will raise if there's no available teacher.
 
-        if isinstance(self, Teacher):
-            announce_nodes = [self.metadata()]
-        else:
-            announce_nodes = []
-
+        announce_nodes = [self.metadata()] if isinstance(self, Teacher) else []
         unresponsive_nodes = set()
 
         #
@@ -799,7 +792,6 @@ class Learner:
             response = self.network_middleware.get_nodes_via_rest(node=current_teacher,
                                                                   announce_nodes=announce_nodes,
                                                                   fleet_state_checksum=self.known_nodes.checksum)
-        # These except clauses apply to the current_teacher itself, not the learned-about nodes.
         except NodeSeemsToBeDown as e:
             unresponsive_nodes.add(current_teacher)
             self.log.info(f"Teacher {current_teacher.seed_node_metadata(as_teacher_uri=True)} is unreachable: {e}.")
@@ -817,11 +809,10 @@ class Learner:
                 # Race condition that seems limited to tests.
                 # TODO: Sort this out.
                 return RELAX
-            else:
-                self.log.warn(
-                    f"Unhandled error while learning from {str(current_teacher)} "
-                    f"(hex={bytes(current_teacher.metadata()).hex()}):{e}.")
-                raise
+            self.log.warn(
+                f"Unhandled error while learning from {str(current_teacher)} "
+                f"(hex={bytes(current_teacher.metadata()).hex()}):{e}.")
+            raise
         except Exception as e:
             self.log.warn(
                 f"Unhandled error while learning from {str(current_teacher)} "
@@ -832,7 +823,9 @@ class Learner:
             self.cycle_teacher_node()
 
         if response.status_code != 200:
-            self.log.info("Bad response from teacher {}: {} - {}".format(current_teacher, response, response.content))
+            self.log.info(
+                f"Bad response from teacher {current_teacher}: {response} - {response.content}"
+            )
             return
 
         # TODO: we really should be checking this *before* we ask it for a node list,
@@ -920,7 +913,7 @@ class Learner:
 
             except SuspiciousActivity:
                 message = f"Suspicious Activity: Discovered sprout with bad signature: {sprout}." \
-                          f"Propagated by: {current_teacher}"
+                              f"Propagated by: {current_teacher}"
                 self.log.warn(message)
 
         ###################
@@ -1012,8 +1005,7 @@ class Teacher:
 
     def seed_node_metadata(self, as_teacher_uri=False) -> SeednodeMetadata:
         if as_teacher_uri:
-            teacher_uri = f'{self.checksum_address}@{self.rest_server.rest_interface.host}:{self.rest_server.rest_interface.port}'
-            return teacher_uri
+            return f'{self.checksum_address}@{self.rest_server.rest_interface.host}:{self.rest_server.rest_interface.port}'
         return SeednodeMetadata(
             self.checksum_address,
             self.rest_server.rest_interface.host,
@@ -1047,19 +1039,17 @@ class Teacher:
         As a follow-up, this checks that the staking provider is, indeed, staking.
         """
         application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=registry, eth_provider_uri=eth_provider_uri)  # type: PREApplicationAgent
-        is_staking = application_agent.is_authorized(staking_provider=self.checksum_address)  # checksum address here is staking provider
-        return is_staking
+        return application_agent.is_authorized(staking_provider=self.checksum_address)
 
     def validate_operator(self, registry: BaseContractRegistry = None, eth_provider_uri: Optional[str] = None) -> None:
 
         # Federated
         if self.federated_only:
             message = "This node cannot be verified in this manner, " \
-                      "but is OK to use in federated mode if you " \
-                      "have reason to believe it is trustworthy."
+                          "but is OK to use in federated mode if you " \
+                          "have reason to believe it is trustworthy."
             raise self.WrongMode(message)
 
-        # Decentralized
         else:
 
             # Try to derive the worker address if it hasn't been derived yet.
@@ -1078,12 +1068,13 @@ class Teacher:
                     self.log.debug(message)
                     raise self.UnbondedOperator(message)
 
-                if self._staking_provider_is_really_staking(registry=registry, eth_provider_uri=eth_provider_uri):  # <-- Blockchain CALL
-                    self.log.info(f'Verified operator {self}')
-                    self.verified_operator = True
-                else:
+                if not self._staking_provider_is_really_staking(
+                    registry=registry, eth_provider_uri=eth_provider_uri
+                ):
                     raise self.NotStaking(f"{self.checksum_address} is not staking")
 
+                self.log.info(f'Verified operator {self}')
+                self.verified_operator = True
             else:
                 self.log.info('No registry provided for staking verification.')
 

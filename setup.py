@@ -20,6 +20,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+
 import os
 import subprocess
 import sys
@@ -53,7 +54,7 @@ PYPI_CLASSIFIERS = [
       "Topic :: Security"
 ]
 
-ABOUT: Dict[str, str] = dict()
+ABOUT: Dict[str, str] = {}
 SOURCE_METADATA_PATH = BASE_DIR / PACKAGE_NAME / "__about__.py"
 with open(str(SOURCE_METADATA_PATH.resolve())) as f:
     exec(f.read(), ABOUT)
@@ -92,7 +93,7 @@ class PostDevelopCommand(develop):
     def run(self):
         """development setup scripts (pre-requirements)"""
         develop.run(self)
-        subprocess.call(f"scripts/installation/install_solc.py")
+        subprocess.call("scripts/installation/install_solc.py")
 
 
 #

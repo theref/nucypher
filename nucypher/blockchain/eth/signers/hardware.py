@@ -85,7 +85,7 @@ class TrezorSigner(Signer):
         self.__client = self._open()
         self._device_id = self.__client.get_device_id()
         self.testnet = testnet     # SLIP44 testnet support for EIP-155 sigatures
-        self.__addresses = dict()  # track derived addresses
+        self.__addresses = {}
         self.__cache_addresses()
 
     @property
@@ -93,8 +93,7 @@ class TrezorSigner(Signer):
         # m/44'/60'/0'/0/x  Mainnet
         # m/44'/1'/0'/0/x   Testnet
         coin_type = self.__TESTNET_COIN_TYPE if self.testnet else self.__ETH_COIN_TYPE
-        path = f"{self.__BIP_44}'/{coin_type}'/{self._DEFAULT_ACCOUNT}'/{self._CHAIN_ID}"
-        return path
+        return f"{self.__BIP_44}'/{coin_type}'/{self._DEFAULT_ACCOUNT}'/{self._CHAIN_ID}"
 
     @handle_trezor_call
     def _open(self) -> TrezorClient:
@@ -133,8 +132,9 @@ class TrezorSigner(Signer):
             if index is None:
                 raise ValueError("No index or HD path supplied.")  # TODO: better error handling here
             hd_path = self.__get_address_path(index=index)
-        address = ethereum.get_address(client=self.__client, n=hd_path, show_display=False)  # TODO: show display?
-        return address
+        return ethereum.get_address(
+            client=self.__client, n=hd_path, show_display=False
+        )
 
     def __cache_addresses(self) -> None:
         """
@@ -157,8 +157,7 @@ class TrezorSigner(Signer):
         """
         assert_valid_fields(transaction_dict)
         trezor_transaction_keys = {'gas': 'gas_limit', 'gasPrice': 'gas_price', 'chainId': 'chain_id'}
-        trezor_transaction = dict(apply_key_map(trezor_transaction_keys, transaction_dict))
-        return trezor_transaction
+        return dict(apply_key_map(trezor_transaction_keys, transaction_dict))
 
     @handle_trezor_call
     def __sign_transaction(self, n: List[int], trezor_transaction: dict) -> Tuple[bytes, bytes, bytes]:

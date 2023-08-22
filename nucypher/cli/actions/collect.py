@@ -49,8 +49,9 @@ def collect_keys_from_card(emitter: StdoutEmitter, card_identifier: str, force: 
 
     bob_encrypting_key = bytes(card.encrypting_key).hex()
     bob_verifying_key = bytes(card.verifying_key).hex()
-    public_keys = PublicKeys(encrypting_key=bob_encrypting_key, verifying_key=bob_verifying_key)
-    return public_keys
+    return PublicKeys(
+        encrypting_key=bob_encrypting_key, verifying_key=bob_verifying_key
+    )
 
 
 def collect_bob_public_keys(
@@ -63,19 +64,17 @@ def collect_bob_public_keys(
     """helper function for collecting Bob's public keys interactively in the Alice CLI."""
 
     if card_identifier:
-        public_keys = collect_keys_from_card(
-            emitter=emitter,
-            card_identifier=card_identifier,
-            force=force)
-        return public_keys
-
+        return collect_keys_from_card(
+            emitter=emitter, card_identifier=card_identifier, force=force
+        )
     if not bob_encrypting_key:
         bob_encrypting_key = click.prompt("Enter Bob's encrypting key")
     if not bob_verifying_key:
         bob_verifying_key = click.prompt("Enter Bob's verifying key")
 
-    public_keys = PublicKeys(encrypting_key=bob_encrypting_key, verifying_key=bob_verifying_key)
-    return public_keys
+    return PublicKeys(
+        encrypting_key=bob_encrypting_key, verifying_key=bob_verifying_key
+    )
 
 
 def collect_label(label: str, bob_identifier: str):
@@ -168,13 +167,11 @@ def collect_policy_parameters(
             shares=shares,
             force=force)
 
-    policy_parameters = PolicyParameters(
+    return PolicyParameters(
         label=label,
         threshold=threshold,
         shares=shares,
         expiration=expiration,
         rate=rate,
-        value=value
+        value=value,
     )
-
-    return policy_parameters

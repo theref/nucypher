@@ -102,8 +102,10 @@ class UrsulaConfigOptions:
 
         if federated_only:
             if registry_filepath or policy_registry_filepath:
-                raise click.BadOptionUsage(option_name="--registry-filepath",
-                                           message=f"--registry-filepath and --policy-registry-filepath cannot be used in federated mode.")
+                raise click.BadOptionUsage(
+                    option_name="--registry-filepath",
+                    message="--registry-filepath and --policy-registry-filepath cannot be used in federated mode.",
+                )
 
         self.eth_provider_uri = eth_provider_uri
         self.signer_uri = signer_uri
@@ -150,39 +152,38 @@ class UrsulaConfigOptions:
                 payment_provider=self.payment_provider,
                 payment_network=self.payment_network
             )
-        else:
-            if not config_file:
-                config_file = select_config_file(emitter=emitter,
-                                                 checksum_address=self.operator_address,
-                                                 config_class=UrsulaConfiguration)
-            try:
-                return UrsulaConfiguration.from_configuration_file(
-                    emitter=emitter,
-                    filepath=config_file,
-                    domain=self.domain,
-                    registry_filepath=self.registry_filepath,
-                    policy_registry_filepath=self.policy_registry_filepath,
-                    eth_provider_uri=self.eth_provider_uri,
-                    signer_uri=self.signer_uri,
-                    gas_strategy=self.gas_strategy,
-                    max_gas_price=self.max_gas_price,
-                    rest_host=self.rest_host,
-                    rest_port=self.rest_port,
-                    db_filepath=self.db_filepath,
-                    poa=self.poa,
-                    light=self.light,
-                    federated_only=self.federated_only,
-                    availability_check=self.availability_check,
-                    payment_method=self.payment_method,
-                    payment_provider=self.payment_provider,
-                    payment_network=self.payment_network
-                )
-            except FileNotFoundError:
-                return handle_missing_configuration_file(character_config_class=UrsulaConfiguration, config_file=config_file)
-            except Keystore.AuthenticationFailed as e:
-                emitter.echo(str(e), color='red', bold=True)
-                # TODO: Exit codes (not only for this, but for other exceptions)
-                return click.get_current_context().exit(1)
+        if not config_file:
+            config_file = select_config_file(emitter=emitter,
+                                             checksum_address=self.operator_address,
+                                             config_class=UrsulaConfiguration)
+        try:
+            return UrsulaConfiguration.from_configuration_file(
+                emitter=emitter,
+                filepath=config_file,
+                domain=self.domain,
+                registry_filepath=self.registry_filepath,
+                policy_registry_filepath=self.policy_registry_filepath,
+                eth_provider_uri=self.eth_provider_uri,
+                signer_uri=self.signer_uri,
+                gas_strategy=self.gas_strategy,
+                max_gas_price=self.max_gas_price,
+                rest_host=self.rest_host,
+                rest_port=self.rest_port,
+                db_filepath=self.db_filepath,
+                poa=self.poa,
+                light=self.light,
+                federated_only=self.federated_only,
+                availability_check=self.availability_check,
+                payment_method=self.payment_method,
+                payment_provider=self.payment_provider,
+                payment_network=self.payment_network
+            )
+        except FileNotFoundError:
+            return handle_missing_configuration_file(character_config_class=UrsulaConfiguration, config_file=config_file)
+        except Keystore.AuthenticationFailed as e:
+            emitter.echo(str(e), color='red', bold=True)
+            # TODO: Exit codes (not only for this, but for other exceptions)
+            return click.get_current_context().exit(1)
 
     def generate_config(self, emitter, config_root, force, key_material):
 
@@ -243,9 +244,7 @@ class UrsulaConfigOptions:
                        payment_provider=self.payment_provider,
                        payment_network=self.payment_network
                        )
-        # Depends on defaults being set on Configuration classes, filtrates None values
-        updates = {k: v for k, v in payload.items() if v is not None}
-        return updates
+        return {k: v for k, v in payload.items() if v is not None}
 
 
 group_config_options = group_options(
@@ -430,7 +429,7 @@ def run(general_config, character_options, config_file, interactive, dry_run, pr
                                                                config_file=config_file,
                                                                json_ipc=general_config.json_ipc)
 
-    if ip_checkup and not (dev_mode or lonely):
+    if ip_checkup and not dev_mode and not lonely:
         # Always skip startup IP checks for dev and lonely modes.
         perform_startup_ip_check(emitter=emitter, ursula=URSULA, force=force)
 

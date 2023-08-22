@@ -57,17 +57,13 @@ def test_alice_get_ursulas_schema(get_random_checksum_address):
 
     # only exclude
     updated_data = dict(required_data)
-    exclude_ursulas = []
-    for i in range(2):
-        exclude_ursulas.append(get_random_checksum_address())
+    exclude_ursulas = [get_random_checksum_address() for _ in range(2)]
     updated_data['exclude_ursulas'] = exclude_ursulas
     AliceGetUrsulas().load(updated_data)
 
     # only include
     updated_data = dict(required_data)
-    include_ursulas = []
-    for i in range(3):
-        include_ursulas.append(get_random_checksum_address())
+    include_ursulas = [get_random_checksum_address() for _ in range(3)]
     updated_data['include_ursulas'] = include_ursulas
     AliceGetUrsulas().load(updated_data)
 

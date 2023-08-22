@@ -167,7 +167,7 @@ def test_etherchain():
         parsed_gas_prices = feed.gas_prices
 
     with patch('nucypher.utilities.datafeeds.EtherchainGasPriceDatafeed._parse_gas_prices', autospec=True):
-        EtherchainGasPriceDatafeed.gas_prices = dict()
+        EtherchainGasPriceDatafeed.gas_prices = {}
         with patch.dict(EtherchainGasPriceDatafeed.gas_prices, values=parsed_gas_prices):
             gas_strategy = feed.construct_gas_strategy()
             assert gas_strategy("web3", "tx") == Web3.toWei(108.0, 'gwei')
@@ -189,7 +189,7 @@ def test_upvest():
         parsed_gas_prices = feed.gas_prices
 
     with patch('nucypher.utilities.datafeeds.UpvestGasPriceDatafeed._parse_gas_prices', autospec=True):
-        UpvestGasPriceDatafeed.gas_prices = dict()
+        UpvestGasPriceDatafeed.gas_prices = {}
         with patch.dict(UpvestGasPriceDatafeed.gas_prices, values=parsed_gas_prices):
             gas_strategy = feed.construct_gas_strategy()
             assert gas_strategy("web3", "tx") == Web3.toWei(105.2745, 'gwei')
@@ -211,7 +211,7 @@ def test_zoltu():
         parsed_gas_prices = feed.gas_prices
 
     with patch('nucypher.utilities.datafeeds.ZoltuGasPriceDatafeed._parse_gas_prices', autospec=True):
-        ZoltuGasPriceDatafeed.gas_prices = dict()
+        ZoltuGasPriceDatafeed.gas_prices = {}
         with patch.dict(ZoltuGasPriceDatafeed.gas_prices, values=parsed_gas_prices):
             gas_strategy = feed.construct_gas_strategy()
             assert gas_strategy("web3", "tx") == Web3.toWei(67, 'gwei')

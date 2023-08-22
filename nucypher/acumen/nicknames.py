@@ -70,7 +70,7 @@ class NicknameCharacter:
         self.symbol = symbol
         self.color_name = color_name
         self.color_hex = color_hex
-        self._text = color_name + " " + _SYMBOLS[symbol]
+        self._text = f"{color_name} {_SYMBOLS[symbol]}"
 
     def to_json(self):
         return dict(symbol=self.symbol,

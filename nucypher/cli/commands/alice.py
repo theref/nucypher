@@ -257,9 +257,7 @@ class AliceFullConfigOptions:
                        payment_network=opts.payment_network,
                        payment_method=opts.payment_method,
                        )
-        # Depends on defaults being set on Configuration classes, filtrates None values
-        updates = {k: v for k, v in payload.items() if v is not None}
-        return updates
+        return {k: v for k, v in payload.items() if v is not None}
 
 
 group_full_config_options = group_options(
@@ -286,16 +284,17 @@ class AliceCharacterOptions:
     def create_character(self, emitter, config_file, json_ipc, load_seednodes=True):
         config = self.config_options.create_config(emitter, config_file)
         try:
-            ALICE = make_cli_character(character_config=config,
-                                       emitter=emitter,
-                                       unlock_keystore=not config.dev_mode,
-                                       unlock_signer=not config.federated_only,
-                                       teacher_uri=self.teacher_uri,
-                                       min_stake=self.min_stake,
-                                       start_learning_now=load_seednodes,
-                                       lonely=self.config_options.lonely,
-                                       json_ipc=json_ipc)
-            return ALICE
+            return make_cli_character(
+                character_config=config,
+                emitter=emitter,
+                unlock_keystore=not config.dev_mode,
+                unlock_signer=not config.federated_only,
+                teacher_uri=self.teacher_uri,
+                min_stake=self.min_stake,
+                start_learning_now=load_seednodes,
+                lonely=self.config_options.lonely,
+                json_ipc=json_ipc,
+            )
         except Keystore.AuthenticationFailed as e:
             emitter.echo(str(e), color='red', bold=True)
             click.get_current_context().exit(1)
@@ -408,8 +407,7 @@ def public_keys(general_config, character_options, config_file):
     """Obtain Alice's public verification and encryption keys."""
     emitter = setup_emitter(general_config)
     ALICE = character_options.create_character(emitter, config_file, general_config.json_ipc, load_seednodes=False)
-    response = ALICE.controller.public_keys()
-    return response
+    return ALICE.controller.public_keys()
 
 
 @alice.command()
@@ -558,5 +556,4 @@ def decrypt(general_config, label, message_kit, character_options, config_file):
     emitter = setup_emitter(general_config)
     ALICE = character_options.create_character(emitter, config_file, general_config.json_ipc, load_seednodes=False)
     request_data = {'label': label, 'message_kit': message_kit}
-    response = ALICE.controller.decrypt(request=request_data)
-    return response
+    return ALICE.controller.decrypt(request=request_data)

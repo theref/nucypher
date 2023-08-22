@@ -26,6 +26,4 @@ class Label(BaseField, fields.Field):
         return value.decode('utf-8')
 
     def _deserialize(self, value, attr, data, **kwargs):
-        if isinstance(value, bytes):
-            return value
-        return value.encode()
+        return value if isinstance(value, bytes) else value.encode()

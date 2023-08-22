@@ -79,7 +79,7 @@ class AnalyzeGas:
     def __init__(self) -> None:
 
         self.log = Logger(self.__class__.__name__)
-        self.gas_estimations = dict()
+        self.gas_estimations = {}
 
         if not self.OUTPUT_DIR.is_dir():
             self.OUTPUT_DIR.mkdir()
@@ -92,7 +92,7 @@ class AnalyzeGas:
 
             matches = self._PATTERN.match(message)
             if not matches:
-                self.log.debug("No match for {} with pattern {}".format(message, self._PATTERN))
+                self.log.debug(f"No match for {message} with pattern {self._PATTERN}")
                 return
 
             label, estimates, gas_used = matches.groups()
@@ -108,7 +108,7 @@ class AnalyzeGas:
         print('Saving JSON Output...')
 
         epoch_time = str(int(time.time()))
-        timestamped_filename = '{}-{}'.format(epoch_time, self.JSON_OUTPUT_FILENAME)
+        timestamped_filename = f'{epoch_time}-{self.JSON_OUTPUT_FILENAME}'
         filepath = self.OUTPUT_DIR / timestamped_filename
         with open(filepath, 'w') as file:
             file.write(json.dumps(self.gas_estimations, indent=4))
@@ -131,8 +131,7 @@ def mock_ursula(testerchain, account):
     signed_stamp = testerchain.client.sign_message(account=account,
                                                    message=bytes(ursula_stamp))
 
-    ursula = Mock(stamp=ursula_stamp, operator_signature=signed_stamp)
-    return ursula
+    return Mock(stamp=ursula_stamp, operator_signature=signed_stamp)
 
 
 def estimate_gas(analyzer: AnalyzeGas = None) -> None:
@@ -166,7 +165,7 @@ def estimate_gas(analyzer: AnalyzeGas = None) -> None:
 
     print("\n********* SIZE OF MAIN CONTRACTS *********")
     MAX_SIZE = 24576
-    rows = list()
+    rows = []
     for contract_name in NUCYPHER_CONTRACT_NAMES:
         compiled_contract = testerchain._raw_contract_cache[contract_name]
 

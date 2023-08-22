@@ -97,7 +97,7 @@ class AvailabilityTracker:
         self._ursula = ursula
         self.enforce_loneliness = enforce_loneliness
 
-        self.__excuses = dict()  # List of failure reasons
+        self.__excuses = {}
         self.__score = 10
         # 10 == Perfect Score
         self.warnings = {
@@ -149,14 +149,14 @@ class AvailabilityTracker:
         if args:
             failure = args[0]
             cleaned_traceback = failure.getTraceback().replace('{', '').replace('}', '')  # FIXME: Amazing.
-            self.log.warn("Unhandled error during availability check: {}".format(cleaned_traceback))
+            self.log.warn(
+                f"Unhandled error during availability check: {cleaned_traceback}"
+            )
             if crash_on_error:
                 failure.raiseException()
-        else:
-            # Restart on failure
-            if not self.running:
-                self.log.debug(f"Availability check crashed, restarting...")
-                self.start(now=True)
+        elif not self.running:
+            self.log.debug("Availability check crashed, restarting...")
+            self.start(now=True)
 
     def status(self) -> bool:
         """Returns current indication of availability"""
@@ -230,8 +230,7 @@ class AvailabilityTracker:
 
     def sample(self, quantity: int) -> list:
         population = tuple(self._ursula.known_nodes.values())
-        ursulas = random.sample(population=population, k=quantity)
-        return ursulas
+        return random.sample(population=population, k=quantity)
 
     @property
     def score(self) -> float:
@@ -244,10 +243,7 @@ class AvailabilityTracker:
         if result is None:
             return  # Actually nevermind, dont score this one...
         score = int(result) + self.CHARGE_RATE * self.__score
-        if score >= self.MAXIMUM_SCORE:
-            self.__score = self.MAXIMUM_SCORE
-        else:
-            self.__score = score
+        self.__score = self.MAXIMUM_SCORE if score >= self.MAXIMUM_SCORE else score
         self.log.debug(f"Recorded new uptime score ({self.score})")
 
     def measure_sample(self, ursulas: list = None) -> None:

@@ -58,12 +58,13 @@ def token_airdrop(token_agent, amount: NU, transacting_power: TransactingPower, 
         args = {'from': transacting_power.account, 'gasPrice': token_agent.blockchain.client.gas_price}
         for address in addresses:
             contract_function = token_agent.contract.functions.transfer(address, int(amount))
-            _receipt = token_agent.blockchain.send_transaction(contract_function=contract_function,
-                                                               transacting_power=transacting_power,
-                                                               payload=args)
-            yield _receipt
+            yield token_agent.blockchain.send_transaction(
+                contract_function=contract_function,
+                transacting_power=transacting_power,
+                payload=args,
+            )
 
-    receipts = list()
+    receipts = []
     for receipt in txs():  # One at a time
         receipts.append(receipt)
     return receipts
@@ -133,9 +134,8 @@ class TesterBlockchain(BlockchainDeployerInterface):
         if not enough_accounts:
             accounts_to_make = population - len(self.client.accounts)
             self.__generate_insecure_unlocked_accounts(quantity=accounts_to_make)
-            assert test_accounts == len(self.w3.eth.accounts)
-
-        if eth_airdrop is True:  # ETH for everyone!
+            assert population == len(self.w3.eth.accounts)
+        if eth_airdrop:  # ETH for everyone!
             self.ether_airdrop(amount=DEVELOPMENT_ETH_AIRDROP_AMOUNT)
 
     def attach_middleware(self):
@@ -156,12 +156,14 @@ class TesterBlockchain(BlockchainDeployerInterface):
         elif "Parity" in client_version:
             raise RuntimeError("WARNING: Parity providers are not implemented.")
 
-        addresses = list()
+        addresses = []
         for _ in range(quantity):
-            address = self.provider.ethereum_tester.add_account('0x' + os.urandom(32).hex())
+            address = self.provider.ethereum_tester.add_account(
+                f'0x{os.urandom(32).hex()}'
+            )
             addresses.append(address)
             self.__ACCOUNT_CACHE.append(address)
-            self.log.info('Generated new insecure account {}'.format(address))
+            self.log.info(f'Generated new insecure account {address}')
         return addresses
 
     def ether_airdrop(self, amount: int) -> List[str]:
@@ -169,7 +171,7 @@ class TesterBlockchain(BlockchainDeployerInterface):
 
         coinbase, *addresses = self.w3.eth.accounts
 
-        tx_hashes = list()
+        tx_hashes = []
         for address in addresses:
             tx = {'to': address, 'from': coinbase, 'value': amount}
             txhash = self.w3.eth.sendTransaction(tx)
@@ -177,7 +179,7 @@ class TesterBlockchain(BlockchainDeployerInterface):
             _receipt = self.wait_for_receipt(txhash)
             tx_hashes.append(txhash)
             eth_amount = Web3().fromWei(amount, 'ether')
-            self.log.info("Airdropped {} ETH {} -> {}".format(eth_amount, tx['from'], tx['to']))
+            self.log.info(f"Airdropped {eth_amount} ETH {tx['from']} -> {tx['to']}")
 
         return tx_hashes
 
@@ -263,11 +265,11 @@ class TesterBlockchain(BlockchainDeployerInterface):
 
     @property
     def ursulas_accounts(self):
-        return list(self.ursula_account(i) for i in self.__OPERATORS_RANGE)
+        return [self.ursula_account(i) for i in self.__OPERATORS_RANGE]
 
     @property
     def stake_providers_accounts(self):
-        return list(self.stake_provider_account(i) for i in self.__STAKING_PROVIDERS_RANGE)
+        return [self.stake_provider_account(i) for i in self.__STAKING_PROVIDERS_RANGE]
 
     @property
     def unassigned_accounts(self):

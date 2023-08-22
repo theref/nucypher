@@ -72,13 +72,12 @@ class MockContractAgent:
         self.__setup_mock(agent_class=agent_class)
 
     def __repr__(self) -> str:
-        r = f'Mock{self.agent_class.__name__}(id={id(self)})'
-        return r
+        return f'Mock{self.agent_class.__name__}(id={id(self)})'
 
     def __setup_mock(self, agent_class: Type[Agent]) -> None:
 
         api_methods: Iterable[Callable] = list(self.__collect_contract_api(agent_class=agent_class))
-        mock_methods, mock_properties = list(), dict()
+        mock_methods, mock_properties = [], {}
 
         for agent_interface in api_methods:
 
@@ -113,9 +112,8 @@ class MockContractAgent:
         self._REAL_METHODS = api_methods
 
     def __get_interface_calls(self, interface: Enum) -> List[Callable]:
-        predicate = lambda method: bool(method.contract_api == interface)
-        interface_calls = list(filter(predicate, self._MOCK_METHODS))
-        return interface_calls
+        predicate = lambda method: method.contract_api == interface
+        return list(filter(predicate, self._MOCK_METHODS))
 
     @classmethod
     def __is_contract_method(cls, agent_class: Type[Agent], method_name: str) -> bool:
@@ -131,8 +129,11 @@ class MockContractAgent:
     def __collect_contract_api(cls, agent_class: Type[Agent]) -> Generator[Callable, None, None]:
         agent_attrs = dir(agent_class)
         predicate = cls.__is_contract_method
-        methods = (getattr(agent_class, name) for name in agent_attrs if predicate(agent_class, name))
-        return methods
+        return (
+            getattr(agent_class, name)
+            for name in agent_attrs
+            if predicate(agent_class, name)
+        )
 
     #
     # Test Utilities
@@ -141,22 +142,19 @@ class MockContractAgent:
     @property
     def all_transactions(self) -> List[Callable]:
         interface = TRANSACTION
-        transaction_functions = self.__get_interface_calls(interface=interface)
-        return transaction_functions
+        return self.__get_interface_calls(interface=interface)
 
     @property
     def contract_calls(self) -> List[Callable]:
         interface = CONTRACT_CALL
-        transaction_functions = self.__get_interface_calls(interface=interface)
-        return transaction_functions
+        return self.__get_interface_calls(interface=interface)
 
     def get_unexpected_transactions(self, allowed: Union[Iterable[Callable], None]) -> List[Callable]:
         if allowed:
             predicate = lambda tx: tx not in allowed and tx.called
         else:
             predicate = lambda tx: tx.called
-        unexpected_transactions = list(filter(predicate, self.all_transactions))
-        return unexpected_transactions
+        return list(filter(predicate, self.all_transactions))
 
     def assert_only_transactions(self, allowed: Iterable[Callable]) -> None:
         unexpected_transactions = self.get_unexpected_transactions(allowed=allowed)
@@ -192,8 +190,7 @@ class MockContractAgency(ContractAgency):
     def get_agent_by_contract_name(cls, contract_name: str, *args, **kwargs) -> MockContractAgent:
         agent_name = super()._contract_name_to_agent_name(name=contract_name)
         agent_class = getattr(agents, agent_name)
-        mock_agent = cls.get_agent(agent_class=agent_class)
-        return mock_agent
+        return cls.get_agent(agent_class=agent_class)
 
     @classmethod
     def reset(cls) -> None:

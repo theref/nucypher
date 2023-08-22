@@ -80,14 +80,13 @@ class InvalidPassword(ValueError):
 
 
 def _assemble_keystore(encrypted_secret: bytes, password_salt: bytes, wrapper_salt: bytes) -> Dict[str, Union[str, bytes]]:
-    encoded_key_data = {
+    return {
         'version': _KEYSTORE_VERSION,
         'created': str(time.time()),
         'key': encrypted_secret,
         'password_salt': password_salt,
         'wrapper_salt': wrapper_salt,
     }
-    return encoded_key_data
 
 
 def _read_keystore(path: Path, deserializer: Callable) -> Dict[str, Union[str, bytes]]:
@@ -158,8 +157,7 @@ def _deserialize_keystore(payload: bytes):
 
 def generate_keystore_filepath(parent: Path, id: str) -> Path:
     utc_nowish = int(time.time())  # epoch
-    path = Path(parent) / f'{utc_nowish}-{id}.priv'
-    return path
+    return Path(parent) / f'{utc_nowish}-{id}.priv'
 
 
 def validate_keystore_password(password: str) -> List:
@@ -171,15 +169,11 @@ def validate_keystore_password(password: str) -> List:
         (len(password) >= Keystore._MINIMUM_PASSWORD_LENGTH,
          f'Password must be at least {Keystore._MINIMUM_PASSWORD_LENGTH} characters long.'),
     )
-    failures = list()
-    for rule, failure_message in rules:
-        if not rule:
-            failures.append(failure_message)
-    return failures
+    return [failure_message for rule, failure_message in rules if not rule]
 
 
 def validate_keystore_filename(path: Path) -> None:
-    base_name = path.name.rstrip('.' + Keystore._SUFFIX)
+    base_name = path.name.rstrip(f'.{Keystore._SUFFIX}')
     parts = base_name.split(Keystore._DELIMITER)
 
     try:
@@ -187,9 +181,8 @@ def validate_keystore_filename(path: Path) -> None:
     except ValueError:
         raise Keystore.Invalid(f'{path} is not a valid keystore filename')
 
-    validators = (
-        bool(len(keystore_id) == Keystore._ID_SIZE),
-        all(char in string.hexdigits for char in keystore_id)
+    validators = len(keystore_id) == Keystore._ID_SIZE, all(
+        char in string.hexdigits for char in keystore_id
     )
 
     valid_path = all(validators)
@@ -209,7 +202,7 @@ def _parse_path(path: Path) -> Tuple[int, str]:
 
     # dissect keystore filename
     validate_keystore_filename(path)
-    base_name = path.name.rstrip('.'+Keystore._SUFFIX)
+    base_name = path.name.rstrip(f'.{Keystore._SUFFIX}')
     parts = base_name.split(Keystore._DELIMITER)
     created, keystore_id = parts
     return created, keystore_id
@@ -218,8 +211,7 @@ def _parse_path(path: Path) -> Tuple[int, str]:
 def _derive_hosting_power(host: str, private_key: SecretKey) -> TLSHostingPower:
     certificate, private_key = generate_self_signed_certificate(host=host, private_key=private_key)
     keypair = HostingKeypair(host=host, private_key=private_key, certificate=certificate, generate_certificate=False)
-    power = TLSHostingPower(keypair=keypair, host=host)
-    return power
+    return TLSHostingPower(keypair=keypair, host=host)
 
 
 class Keystore:
@@ -274,8 +266,7 @@ class Keystore:
 
     @staticmethod
     def __save(secret: bytes, password: str, keystore_dir: Optional[Path] = None) -> Path:
-        failures = validate_keystore_password(password)
-        if failures:
+        if failures := validate_keystore_password(password):
             # TODO: Ensure this scope is separable from the scope containing the password
             #       to help avoid unintentional logging of the password.
             raise InvalidPassword(''.join(failures))
@@ -314,8 +305,7 @@ class Keystore:
     @classmethod
     def load(cls, id: str, keystore_dir: Path = _DEFAULT_DIR) -> 'Keystore':
         filepath = generate_keystore_filepath(parent=keystore_dir, id=id)
-        instance = cls(keystore_path=filepath)
-        return instance
+        return cls(keystore_path=filepath)
 
     @classmethod
     def import_secure(cls, key_material: bytes, password: str, keystore_dir: Optional[Path] = None) -> 'Keystore':
@@ -330,8 +320,7 @@ class Keystore:
         if len(key_material) != SecretKey.serialized_size():
             raise ValueError(f'Entropy bytes bust be exactly {SecretKey.serialized_size()}.')
         path = Keystore.__save(secret=key_material, password=password, keystore_dir=keystore_dir)
-        keystore = cls(keystore_path=path)
-        return keystore
+        return cls(keystore_path=path)
 
     @classmethod
     def restore(cls, words: str, password: str, keystore_dir: Optional[Path] = None) -> 'Keystore':
@@ -339,8 +328,7 @@ class Keystore:
         __mnemonic = Mnemonic(_MNEMONIC_LANGUAGE)
         __secret = bytes(__mnemonic.to_entropy(words))
         path = Keystore.__save(secret=__secret, password=password, keystore_dir=keystore_dir)
-        keystore = cls(keystore_path=path)
-        return keystore
+        return cls(keystore_path=path)
 
     @classmethod
     def generate(
@@ -357,10 +345,7 @@ class Keystore:
         path = Keystore.__save(secret=__secret, password=password, keystore_dir=keystore_dir)
         keystore = cls(keystore_path=path)
 
-        if interactive:
-            return keystore
-
-        return keystore, __words
+        return keystore if interactive else (keystore, __words)
 
     @staticmethod
     def _confirm_generate(__words: str) -> None:

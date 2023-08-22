@@ -32,7 +32,7 @@ def parse_node_uri(uri: str):
         if checksum_address is None:
             raise ValueError(f"{uri} is not a valid Teacher URI - no checksum address.")
         if not is_checksum_address(checksum_address):
-            raise ValueError("{} is not a valid checksum address.".format(checksum_address))
+            raise ValueError(f"{checksum_address} is not a valid checksum address.")
     else:
         checksum_address = None  # federated
 
@@ -41,18 +41,18 @@ def parse_node_uri(uri: str):
     # It's not clear that there is any version of python 3.7+ that requires this, so we may
     # be able to drop it in the near future.
     if not uri.startswith("https://"):
-        uri = "https://" + uri
+        uri = f"https://{uri}"
     #############################################
 
     parsed_uri = urlparse(uri)
 
     if not parsed_uri.scheme:
         try:
-            parsed_uri = urlparse('https://'+uri)
+            parsed_uri = urlparse(f'https://{uri}')
         except Exception:
             raise  # TODO: Do we need even deeper handling/validation here?
 
-    if not parsed_uri.scheme == "https":
+    if parsed_uri.scheme != "https":
         raise ValueError("Invalid teacher scheme or protocol. Is the hostname prefixed with 'https://' ?")
 
     hostname = parsed_uri.hostname
@@ -73,11 +73,11 @@ class InterfaceInfo:
 
     @property
     def uri(self):
-        return u"{}:{}".format(self.host, self.port)
+        return f"{self.host}:{self.port}"
 
     @property
     def formal_uri(self):
-        return u"{}://{}".format('https', self.uri)
+        return f"https://{self.uri}"
 
     def __repr__(self):
         return self.uri

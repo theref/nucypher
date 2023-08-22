@@ -40,8 +40,9 @@ def test_all_blockchain_ursulas_know_about_all_other_ursulas(blockchain_ursulas,
             if address == propagating_ursula.checksum_address:
                 continue
             else:
-                assert address in propagating_ursula.known_nodes.addresses(), "{} did not know about {}". \
-                    format(propagating_ursula, Nickname.from_seed(address))
+                assert (
+                    address in propagating_ursula.known_nodes.addresses()
+                ), f"{propagating_ursula} did not know about {Nickname.from_seed(address)}"
 
 
 def test_blockchain_alice_finds_ursula_via_rest(blockchain_alice, blockchain_ursulas):
@@ -88,7 +89,7 @@ def test_vladimir_illegal_interface_key_does_not_propagate(blockchain_ursulas):
     globalLogPublisher.removeObserver(warning_trapper)
 
     # So far, Ursula hasn't noticed any Vladimirs.
-    assert len(warnings) == 0
+    assert not warnings
 
     # ...but now, Ursula will now try to learn about Vladimir on a different thread.
     other_ursula.block_until_specific_nodes_are_known([vladimir.checksum_address])
@@ -104,7 +105,7 @@ def test_vladimir_illegal_interface_key_does_not_propagate(blockchain_ursulas):
     # Indeed, Ursula noticed that something was up.
     assert len(warnings) == 1
     warning = warnings[0]['log_format']
-    assert "Teacher " + str(vladimir_as_learned) + " is invalid" in warning
+    assert f"Teacher {str(vladimir_as_learned)} is invalid" in warning
     assert "Metadata signature is invalid" in warning  # TODO: Cleanup logging templates
 
     # TODO (#567)

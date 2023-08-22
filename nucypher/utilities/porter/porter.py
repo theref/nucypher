@@ -170,19 +170,18 @@ the Pipe for PRE Application network operations
                         quantity: int,
                         exclude_ursulas: Optional[Sequence[ChecksumAddress]] = None,
                         include_ursulas: Optional[Sequence[ChecksumAddress]] = None):
-        if self.federated_only:
-            sample_size = quantity - (len(include_ursulas) if include_ursulas else 0)
-            if not self.block_until_number_of_known_nodes_is(sample_size,
-                                                             timeout=self.DEFAULT_EXECUTION_TIMEOUT,
-                                                             learn_on_this_thread=True):
-                raise ValueError("Unable to learn about sufficient Ursulas")
-            return make_federated_staker_reservoir(known_nodes=self.known_nodes,
-                                                   exclude_addresses=exclude_ursulas,
-                                                   include_addresses=include_ursulas)
-        else:
+        if not self.federated_only:
             return make_decentralized_staking_provider_reservoir(application_agent=self.application_agent,
                                                                  exclude_addresses=exclude_ursulas,
                                                                  include_addresses=include_ursulas)
+        sample_size = quantity - (len(include_ursulas) if include_ursulas else 0)
+        if not self.block_until_number_of_known_nodes_is(sample_size,
+                                                         timeout=self.DEFAULT_EXECUTION_TIMEOUT,
+                                                         learn_on_this_thread=True):
+            raise ValueError("Unable to learn about sufficient Ursulas")
+        return make_federated_staker_reservoir(known_nodes=self.known_nodes,
+                                               exclude_addresses=exclude_ursulas,
+                                               include_addresses=include_ursulas)
 
     def make_cli_controller(self, crash_on_error: bool = False):
         controller = PorterCLIController(app_name=self.APP_NAME,

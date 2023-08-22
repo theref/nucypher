@@ -35,7 +35,7 @@ def generate_random_label() -> bytes:
     """
     adjs = ('my', 'sesame-street', 'black', 'cute')
     nouns = ('lizard', 'super-secret', 'data', 'coffee')
-    combinations = list('-'.join((a, n)) for a in adjs for n in nouns)
+    combinations = ['-'.join((a, n)) for a in adjs for n in nouns]
     selection = random.choice(combinations)
     random_label = f'label://{selection}-{os.urandom(4).hex()}'
     return bytes(random_label, encoding='utf-8')
@@ -51,7 +51,9 @@ def retrieval_request_setup(enacted_policy, bob, alice,  original_message: bytes
     # We can pass any number of capsules as args; here we pass just one.
     enrico = Enrico(policy_encrypting_key=enacted_policy.public_key)
     if not original_message:
-        original_message = ''.join(random.choice(string.ascii_lowercase) for i in range(20)).encode()  # random message
+        original_message = ''.join(
+            random.choice(string.ascii_lowercase) for _ in range(20)
+        ).encode()
     message_kit = enrico.encrypt_message(original_message)
 
     encode_bytes = (lambda field, obj: field()._serialize(value=obj, attr=None, obj=None)) if encode_for_rest else (lambda field, obj: obj)

@@ -54,8 +54,7 @@ class Web3Signer(Signer):
             blockchain = BlockchainInterfaceFactory.get_or_create_interface(eth_provider_uri=uri)
         except BlockchainInterface.UnsupportedProvider:
             raise cls.InvalidSignerURI(uri)
-        signer = cls(client=blockchain.client)
-        return signer
+        return cls(client=blockchain.client)
 
     def is_connected(self) -> bool:
         return self.__client.w3.isConnected()
@@ -79,19 +78,21 @@ class Web3Signer(Signer):
 
     @validate_checksum_address
     def unlock_account(self, account: str, password: str, duration: int = None):
-        if self.is_device(account=account):
-            unlocked = True
-        else:
-            unlocked = self.__client.unlock_account(account=account, password=password, duration=duration)
-        return unlocked
+        return (
+            True
+            if self.is_device(account=account)
+            else self.__client.unlock_account(
+                account=account, password=password, duration=duration
+            )
+        )
 
     @validate_checksum_address
     def lock_account(self, account: str):
-        if self.is_device(account=account):
-            result = None  # TODO: Force Disconnect Devices?
-        else:
-            result = self.__client.lock_account(account=account)
-        return result
+        return (
+            None
+            if self.is_device(account=account)
+            else self.__client.lock_account(account=account)
+        )
 
     @validate_checksum_address
     def sign_message(self, account: str, message: bytes, **kwargs) -> HexBytes:
@@ -99,8 +100,7 @@ class Web3Signer(Signer):
         return HexBytes(signature)
 
     def sign_transaction(self, transaction_dict: dict) -> HexBytes:
-        signed_raw_transaction = self.__client.sign_transaction(transaction_dict=transaction_dict)
-        return signed_raw_transaction
+        return self.__client.sign_transaction(transaction_dict=transaction_dict)
 
 
 class ClefSigner(Signer):
@@ -150,8 +150,7 @@ class ClefSigner(Signer):
             raise cls.InvalidSignerURI('Blank signer URI - No keystore path provided')
         if uri_breakdown.scheme != cls.uri_scheme():
             raise cls.InvalidSignerURI(f"{uri} is not a valid clef signer URI.")
-        signer = cls(ipc_path=uri_breakdown.path, testnet=testnet)
-        return signer
+        return cls(ipc_path=uri_breakdown.path, testnet=testnet)
 
     def is_connected(self) -> bool:
         return self.w3.isConnected()
@@ -163,8 +162,7 @@ class ClefSigner(Signer):
     @property
     def accounts(self) -> List[str]:
         normalized_addresses = self.__ipc_request(endpoint="account_list")
-        checksum_addresses = [to_checksum_address(addr) for addr in normalized_addresses]
-        return checksum_addresses
+        return [to_checksum_address(addr) for addr in normalized_addresses]
 
     @validate_checksum_address
     def sign_transaction(self, transaction_dict: dict) -> HexBytes:
@@ -213,11 +211,12 @@ class ClefSigner(Signer):
         return HexBytes(signed_data)
 
     def sign_data_for_validator(self, account: str, message: bytes, validator_address: str):
-        signature = self.sign_message(account=account,
-                                      message=message,
-                                      content_type=self.SIGN_DATA_FOR_VALIDATOR,
-                                      validator_address=validator_address)
-        return signature
+        return self.sign_message(
+            account=account,
+            message=message,
+            content_type=self.SIGN_DATA_FOR_VALIDATOR,
+            validator_address=validator_address,
+        )
 
     @validate_checksum_address
     def unlock_account(self, account: str, password: str, duration: int = None) -> bool:
@@ -243,8 +242,8 @@ class KeystoreSigner(Signer):
     def __init__(self, path: Path, testnet: bool = False):
         super().__init__()
         self.__path = path
-        self.__keys = dict()
-        self.__signers = dict()
+        self.__keys = {}
+        self.__signers = {}
         self.__read_keystore(path=path)
         self.testnet = testnet
 
@@ -331,10 +330,10 @@ class KeystoreSigner(Signer):
         decoded_uri = urlparse(uri)
         if decoded_uri.scheme != cls.uri_scheme() or decoded_uri.netloc:
             raise cls.InvalidSignerURI(uri)
-        path = decoded_uri.path
-        if not path:
+        if path := decoded_uri.path:
+            return cls(path=Path(path), testnet=testnet)
+        else:
             raise cls.InvalidSignerURI('Blank signer URI - No keystore path provided')
-        return cls(path=Path(path), testnet=testnet)
 
     @validate_checksum_address
     def is_device(self, account: str) -> bool:
@@ -398,8 +397,9 @@ class KeystoreSigner(Signer):
         if not transaction_dict['to']:
             transaction_dict = dissoc(transaction_dict, 'to')
 
-        raw_transaction = signer.sign_transaction(transaction_dict=transaction_dict).rawTransaction
-        return raw_transaction
+        return signer.sign_transaction(
+            transaction_dict=transaction_dict
+        ).rawTransaction
 
     @validate_checksum_address
     def sign_message(self, account: str, message: bytes, **kwargs) -> HexBytes:

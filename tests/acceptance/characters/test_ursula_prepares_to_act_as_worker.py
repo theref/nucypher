@@ -63,8 +63,7 @@ def test_blockchain_ursula_verifies_stamp(blockchain_ursulas):
 
 def remote_vladimir(**kwds):
     vladimir = Vladimir.from_target_ursula(**kwds)
-    remote_vladimir = Ursula.from_metadata_bytes(bytes(vladimir.metadata())).mature()
-    return remote_vladimir
+    return Ursula.from_metadata_bytes(bytes(vladimir.metadata())).mature()
 
 
 def test_vladimir_cannot_verify_interface_with_ursulas_signing_key(blockchain_ursulas):

@@ -54,16 +54,16 @@ class _TestMiddlewareClient(NucypherMiddlewareClient):
         ursula = self._get_ursula_by_port(port)
         rest_app = ursula.rest_app
         rest_app.testing = True
-        mock_client = rest_app.test_client()
-        return mock_client
+        return rest_app.test_client()
 
     def _get_ursula_by_port(self, port):
         mkuc = MOCK_KNOWN_URSULAS_CACHE
         try:
             return mkuc[port]
         except KeyError:
-             raise BadTestUrsulas(
-                "Can't find an Ursula with port {} - did you spin up the right test ursulas?".format(port))
+            raise BadTestUrsulas(
+                f"Can't find an Ursula with port {port} - did you spin up the right test ursulas?"
+            )
 
     def parse_node_or_host_and_port(self, node=None, host=None, port=None):
         if node:
@@ -81,8 +81,7 @@ class _TestMiddlewareClient(NucypherMiddlewareClient):
     def invoke_method(self, method, url, *args, **kwargs):
         _cert_location = kwargs.pop("verify")  # TODO: Is this something that can be meaningfully tested?
         kwargs.pop("timeout", None)  # Just get rid of timeout; not needed for the test client.
-        response = super().invoke_method(method, url, *args, **kwargs)
-        return response
+        return super().invoke_method(method, url, *args, **kwargs)
 
     def clean_params(self, request_kwargs):
         request_kwargs["query_string"] = request_kwargs.pop("params", {})
@@ -185,14 +184,9 @@ class EvilMiddleWare(MockRestMiddleware):
         """
         fleet_state_checksum = FleetStateChecksum(this_node=None, other_nodes=[])
         request = MetadataRequest(fleet_state_checksum=fleet_state_checksum, announce_nodes=[shitty_metadata])
-        response = self.client.post(node_or_sprout=ursula,
-                                    path="node_metadata",
-                                    data=bytes(request)
-                                    )
-        return response
+        return self.client.post(
+            node_or_sprout=ursula, path="node_metadata", data=bytes(request)
+        )
 
     def upload_arbitrary_data(self, node, path, data):
-        response = self.client.post(node_or_sprout=node,
-                                    path=path,
-                                    data=data)
-        return response
+        return self.client.post(node_or_sprout=node, path=path, data=data)

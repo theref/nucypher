@@ -42,15 +42,14 @@ def make_header(brand: bytes, major: int, minor: int) -> bytes:
     assert len(brand) == 4
     major_bytes = major.to_bytes(2, 'big')
     minor_bytes = minor.to_bytes(2, 'big')
-    header = brand + major_bytes + minor_bytes
-    return header
+    return brand + major_bytes + minor_bytes
 
 
 def test_various_field_validations_by_way_of_alice_grant(federated_bob):
     """ test some semi-complex validation situations """
 
     with pytest.raises(InvalidInputData):
-        GrantPolicy().load(dict())
+        GrantPolicy().load({})
 
     bob_encrypting_key = federated_bob.public_keys(DecryptingPower)
 

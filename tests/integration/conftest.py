@@ -104,8 +104,7 @@ def mock_interface(module_mocker):
 
 @pytest.fixture(scope='module')
 def test_registry():
-    registry = InMemoryContractRegistry()
-    return registry
+    return InMemoryContractRegistry()
 
 
 @pytest.fixture(scope='module')
@@ -136,7 +135,7 @@ def mock_contract_agency(module_mocker, application_economics):
 
 @pytest.fixture(scope='module')
 def mock_accounts():
-    accounts = dict()
+    accounts = {}
     for i in range(NUMBER_OF_MOCK_KEYSTORE_ACCOUNTS):
         account = Account.create()
         filename = KEYFILE_NAME_TEMPLATE.format(month=i+1, address=account.address)
@@ -151,8 +150,7 @@ def mock_account(mock_accounts):
 
 @pytest.fixture(scope='module')
 def operator_account(mock_accounts, mock_testerchain):
-    account = list(mock_accounts.values())[0]
-    return account
+    return list(mock_accounts.values())[0]
 
 
 @pytest.fixture(scope='module')
@@ -163,8 +161,7 @@ def operator_address(operator_account):
 
 @pytest.fixture(scope='module')
 def custom_config_filepath(custom_filepath: Path):
-    filepath = custom_filepath / UrsulaConfiguration.generate_filename()
-    return filepath
+    return custom_filepath / UrsulaConfiguration.generate_filename()
 
 
 @pytest.fixture(scope='function')

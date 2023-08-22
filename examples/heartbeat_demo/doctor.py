@@ -14,6 +14,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import base64
 import json
 from pathlib import Path
@@ -121,6 +122,6 @@ for message_kit in message_kits:
     scale = columns / 40
     scaled_heart_rate = int(scale * (heart_rate - 60))
     retrieval_time = "Retrieval time: {:8.2f} ms".format(1000 * (end - start))
-    line = ("-" * scaled_heart_rate) + "❤︎ ({} BPM)".format(heart_rate)
+    line = "-" * scaled_heart_rate + f"❤︎ ({heart_rate} BPM)"
     line = line.ljust(max_width - 27, " ") + retrieval_time
     print(line)

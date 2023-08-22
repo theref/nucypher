@@ -81,7 +81,7 @@ def encrypt(general_config, policy_encrypting_key, message, file, ipfs):
 
     ENRICO = _create_enrico(emitter, policy_encrypting_key)
     if message and file:
-        emitter.error(f'Pass either --message or --file, not both.')
+        emitter.error('Pass either --message or --file, not both.')
         raise click.Abort
 
     if not message and not file:

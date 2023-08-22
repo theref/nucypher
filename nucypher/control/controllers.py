@@ -63,8 +63,7 @@ class ControllerBase(ABC):
         params = serializer.load(request) # input validation will occur here.
         response = method(**params)  # < ---- INLET
 
-        response_data = serializer.dump(response)
-        return response_data
+        return serializer.dump(response)
 
 
 class InterfaceControlServer(ControllerBase):
@@ -153,12 +152,10 @@ class JSONRPCController(InterfaceControlServer):
         except ImportError:
             raise DevelopmentInstallationRequired(importable_name='tests.utils.controllers.JSONRPCTestClient')
 
-        test_client = JSONRPCTestClient(rpc_controller=self)
-        return test_client
+        return JSONRPCTestClient(rpc_controller=self)
 
     def make_control_transport(self):
-        transport = stdio.StandardIO(JSONRPCLineReceiver(rpc_controller=self))
-        return transport
+        return stdio.StandardIO(JSONRPCLineReceiver(rpc_controller=self))
 
     def handle_procedure_call(self, control_request) -> int:
 
@@ -171,7 +168,7 @@ class JSONRPCController(InterfaceControlServer):
 
         # Read the interface's signature metadata
         method_name = control_request['method']
-        method_params = control_request.get('params', dict())  # optional
+        method_params = control_request.get('params', {})
         if method_name not in self._get_interfaces():
             raise self.emitter.MethodNotFound(f'No method called {method_name}')
 
@@ -311,7 +308,7 @@ class WebController(InterfaceControlServer):
 
         try:
             request_data = control_request.data
-            request_body = json.loads(request_data) if request_data else dict()
+            request_body = json.loads(request_data) if request_data else {}
 
             # handle query string parameters
             if hasattr(control_request, 'args'):
@@ -324,9 +321,6 @@ class WebController(InterfaceControlServer):
 
             response = self._perform_action(action=method_name, request=request_body)
 
-        #
-        # Client Errors
-        #
         except _400_exceptions as e:
             __exception_code = 400
             return self.emitter.exception(
@@ -335,9 +329,6 @@ class WebController(InterfaceControlServer):
                 response_code=__exception_code,
                 error_message=WebController._captured_status_codes[__exception_code])
 
-        #
-        # Server Errors
-        #
         except SpecificationError as e:
             __exception_code = 500
             if self.crash_on_error:
@@ -348,9 +339,6 @@ class WebController(InterfaceControlServer):
                 response_code=__exception_code,
                 error_message=WebController._captured_status_codes[__exception_code])
 
-        #
-        # Unhandled Server Errors
-        #
         except WorkerPoolException as e:
             # special case since WorkerPoolException contain stack traces - not ideal for returning from REST endpoints
             __exception_code = 500
@@ -360,14 +348,14 @@ class WebController(InterfaceControlServer):
             if isinstance(e, WorkerPool.TimedOut):
                 message_prefix = f"Execution timed out after {e.timeout}s"
             else:
-                message_prefix = f"Execution failed - no more values to try"
+                message_prefix = "Execution failed - no more values to try"
 
             # get random failure for context
             if e.failures:
                 value = list(e.failures)[0]
                 _, exception, _ = e.failures[value]
                 msg = f"{message_prefix} ({len(e.failures)} concurrent failures recorded); " \
-                      f"for example, for {value}: {exception}"
+                          f"for example, for {value}: {exception}"
             else:
                 msg = message_prefix
 
@@ -387,9 +375,6 @@ class WebController(InterfaceControlServer):
                 response_code=__exception_code,
                 error_message=WebController._captured_status_codes[__exception_code])
 
-        #
-        # Send to WebEmitter
-        #
         else:
             self.log.debug(f"{method_name} [200 - OK]")
             return self.emitter.respond(response=response)

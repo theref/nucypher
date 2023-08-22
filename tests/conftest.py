@@ -160,9 +160,9 @@ def check_character_state_after_test(request):
         crashed = [learner for learner in test_learners if learner._crashed]
 
         if any(crashed):
-            failure_message = ""
-            for learner in crashed:
-                failure_message += learner._crashed.getBriefTraceback()
+            failure_message = "".join(
+                learner._crashed.getBriefTraceback() for learner in crashed
+            )
             pytest.fail(f"Some learners crashed:{failure_message}")
 
         still_running = [learner for learner in test_learners if learner._learning_task.running]

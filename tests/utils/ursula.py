@@ -91,7 +91,7 @@ def make_decentralized_ursulas(ursula_config: UrsulaConfiguration,
         starting_port = max(MOCK_KNOWN_URSULAS_CACHE.keys()) + 1
 
     providers_and_operators = zip(staking_provider_addresses, operator_addresses)
-    ursulas = list()
+    ursulas = []
 
     for port, (staking_provider_address, operator_address) in enumerate(providers_and_operators, start=starting_port):
         ursula = ursula_config.produce(checksum_address=staking_provider_address,
@@ -148,9 +148,8 @@ def start_pytest_ursula_services(ursula: Ursula) -> Certificate:
     node_deployer.catalogServers(node_deployer.hendrix)
     node_deployer.start()
 
-    certificate_as_deployed = node_deployer.cert.to_cryptography()
-    return certificate_as_deployed
+    return node_deployer.cert.to_cryptography()
 
 
-MOCK_KNOWN_URSULAS_CACHE = dict()
+MOCK_KNOWN_URSULAS_CACHE = {}
 MOCK_URSULA_STARTING_PORT = 51000  # select_test_port()

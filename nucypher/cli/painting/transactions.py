@@ -46,6 +46,6 @@ def paint_receipt_summary(emitter, receipt, chain_name: str = None, transaction_
     try:
         url = etherscan_url(item=tx_hash, network=chain_name)
     except ValueError as e:
-        emitter.log.info("Failed Etherscan URL construction: " + str(e))
+        emitter.log.info(f"Failed Etherscan URL construction: {str(e)}")
     else:
         emitter.echo(f" See {url}\n")

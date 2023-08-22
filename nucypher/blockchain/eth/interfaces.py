@@ -136,16 +136,11 @@ class BlockchainInterface:
         @property
         def default(self) -> str:
             sender = self.payload["from"]
-            message = f'{self.name} from {sender[:6]}... \n' \
-                      f'Sender balance: {prettify_eth_amount(self.get_balance())} \n' \
-                      f'Reason: {self.base_message} \n' \
-                      f'Transaction: {self.payload}'
-            return message
+            return f'{self.name} from {sender[:6]}... \nSender balance: {prettify_eth_amount(self.get_balance())} \nReason: {self.base_message} \nTransaction: {self.payload}'
 
         def get_balance(self):
             blockchain = BlockchainInterfaceFactory.get_interface()
-            balance = blockchain.client.get_balance(account=self.payload['from'])
-            return balance
+            return blockchain.client.get_balance(account=self.payload['from'])
 
         @property
         def insufficient_eth(self) -> str:
@@ -247,8 +242,9 @@ class BlockchainInterface:
         self.max_gas_price = max_gas_price
 
     def __repr__(self):
-        r = '{name}({uri})'.format(name=self.__class__.__name__, uri=self.eth_provider_uri)
-        return r
+        return '{name}({uri})'.format(
+            name=self.__class__.__name__, uri=self.eth_provider_uri
+        )
 
     def get_blocktime(self):
         return self.client.get_blocktime()
@@ -328,7 +324,7 @@ class BlockchainInterface:
 
         # Attach Provider
         self._attach_eth_provider(eth_provider=self._eth_provider, eth_provider_uri=eth_provider_uri)
-        self.log.info("Connecting to {}".format(self.eth_provider_uri))
+        self.log.info(f"Connecting to {self.eth_provider_uri}")
         if self._eth_provider is NO_BLOCKCHAIN_CONNECTION:
             raise self.NoProvider("There are no configured blockchain providers")
 
@@ -452,8 +448,12 @@ class BlockchainInterface:
         except AttributeError:
             pass
         tx['from'] = to_checksum_address(tx['from'])
-        tx.update({f: prettify_eth_amount(v) for f, v in tx.items() if f in ('gasPrice', 'value')})
-        payload_pprint = ', '.join("{}: {}".format(k, v) for k, v in tx.items())
+        tx |= {
+            f: prettify_eth_amount(v)
+            for f, v in tx.items()
+            if f in ('gasPrice', 'value')
+        }
+        payload_pprint = ', '.join(f"{k}: {v}" for k, v in tx.items())
 
         # Log
         transaction_name = get_transaction_name(contract_function=contract_function)
@@ -475,10 +475,10 @@ class BlockchainInterface:
         # Aggregate
         if not payload:
             payload = {}
-        payload.update(base_payload)
+        payload |= base_payload
         # Explicit gas override - will skip gas estimation in next operation.
         if transaction_gas_limit:
-            payload['gas'] = int(transaction_gas_limit)
+            payload['gas'] = transaction_gas_limit
         return payload
 
     @validate_checksum_address
@@ -592,9 +592,7 @@ class BlockchainInterface:
         #
 
         try:  # TODO: Handle block confirmation exceptions
-            waiting_for = 'receipt'
-            if confirmations:
-                waiting_for = f'{confirmations} confirmations'
+            waiting_for = f'{confirmations} confirmations' if confirmations else 'receipt'
             emitter.message(f'Waiting {self.TIMEOUT} seconds for {waiting_for}', color='yellow')
             receipt = self.client.wait_for_receipt(txhash, timeout=self.TIMEOUT, confirmations=confirmations)
         except TimeExhausted:
@@ -611,7 +609,7 @@ class BlockchainInterface:
         transaction_status = receipt.get('status', UNKNOWN_TX_STATUS)
         if transaction_status == 0:
             failure = f"Transaction transmitted, but receipt returned status code 0. " \
-                      f"Full receipt: \n {pprint.pformat(receipt, indent=2)}"
+                          f"Full receipt: \n {pprint.pformat(receipt, indent=2)}"
             raise self.InterfaceError(failure)
 
         if transaction_status is UNKNOWN_TX_STATUS:
@@ -659,12 +657,13 @@ class BlockchainInterface:
         except AttributeError:
             transaction_name = 'DEPLOY' if isinstance(contract_function, ContractConstructor) else 'UNKNOWN'
 
-        txhash_or_receipt = self.sign_and_broadcast_transaction(transacting_power=transacting_power,
-                                                                transaction_dict=transaction,
-                                                                transaction_name=transaction_name,
-                                                                confirmations=confirmations,
-                                                                fire_and_forget=fire_and_forget)
-        return txhash_or_receipt
+        return self.sign_and_broadcast_transaction(
+            transacting_power=transacting_power,
+            transaction_dict=transaction,
+            transaction_name=transaction_name,
+            confirmations=confirmations,
+            fire_and_forget=fire_and_forget,
+        )
 
     def get_contract_by_name(self,
                              registry: BaseContractRegistry,
@@ -698,7 +697,7 @@ class BlockchainInterface:
 
             # Lookup proxies; Search for a published proxy that targets this contract record
             proxy_records = registry.search(contract_name=proxy_name)
-            results = list()
+            results = []
 
             for proxy_name, proxy_version, proxy_address, proxy_abi in proxy_records:
                 proxy_contract = self.client.w3.eth.contract(abi=proxy_abi,
@@ -712,24 +711,24 @@ class BlockchainInterface:
                 # or
                 # use older version of the same contract
                 for target_name, target_version, target_address, target_abi in target_all_contract_records:
-                    if target_address == proxy_live_target_address:
-                        if contract_version:
-                            # contract_version specified - use specific contract
-                            target_version = target_contract_records[0][1]
-                            target_abi = target_contract_records[0][3]
-
-                        if use_proxy_address:
-                            triplet = (proxy_address, target_version, target_abi)
-                        else:
-                            triplet = (target_address, target_version, target_abi)
-                    else:
+                    if target_address != proxy_live_target_address:
                         continue
 
+                    if contract_version:
+                        # contract_version specified - use specific contract
+                        target_version = target_contract_records[0][1]
+                        target_abi = target_contract_records[0][3]
+
+                    triplet = (
+                        (proxy_address, target_version, target_abi)
+                        if use_proxy_address
+                        else (target_address, target_version, target_abi)
+                    )
                     results.append(triplet)
 
             if len(results) > 1:
                 address, _version, _abi = results[0]
-                message = "Multiple {} deployments are targeting {}".format(proxy_name, address)
+                message = f"Multiple {proxy_name} deployments are targeting {address}"
                 raise self.InterfaceError(message.format(contract_name))
             else:
                 try:
@@ -744,8 +743,8 @@ class BlockchainInterface:
             if len(target_contract_records) != 1:
                 if enrollment_version is None:
                     m = f"{len(target_contract_records)} records enrolled " \
-                        f"for contract {contract_name}:{contract_version} " \
-                        f"and no version index was supplied."
+                            f"for contract {contract_name}:{contract_version} " \
+                            f"and no version index was supplied."
                     raise self.InterfaceError(m)
                 enrollment_version = self.__get_enrollment_version_index(name=contract_name,
                                                                          contract_version=contract_version,
@@ -757,13 +756,12 @@ class BlockchainInterface:
 
             _contract_name, selected_version, selected_address, selected_abi = target_contract_records[enrollment_version]
 
-        # Create the contract from selected sources
-        unified_contract = self.client.w3.eth.contract(abi=selected_abi,
-                                                       address=selected_address,
-                                                       version=selected_version,
-                                                       ContractFactoryClass=self._CONTRACT_FACTORY)
-
-        return unified_contract
+        return self.client.w3.eth.contract(
+            abi=selected_abi,
+            address=selected_address,
+            version=selected_version,
+            ContractFactoryClass=self._CONTRACT_FACTORY,
+        )
 
     @staticmethod
     def __get_enrollment_version_index(version_index: Union[int, str],
@@ -837,11 +835,14 @@ class BlockchainDeployerInterface(BlockchainInterface):
         # Build the deployment transaction #
         #
 
-        deploy_transaction = dict()
+        deploy_transaction = {}
         if gas_limit:
-            deploy_transaction.update({'gas': gas_limit})
+            deploy_transaction['gas'] = gas_limit
 
-        pprint_args = ', '.join(list(map(str, constructor_args)) + list(f"{k}={v}" for k, v in constructor_kwargs.items()))
+        pprint_args = ', '.join(
+            list(map(str, constructor_args))
+            + [f"{k}={v}" for k, v in constructor_kwargs.items()]
+        )
 
         contract_factory = self.get_contract_factory(contract_name=contract_name, version=contract_version)
         self.log.info(f"Deploying contract {contract_name}:{contract_factory.version} with "
@@ -849,11 +850,12 @@ class BlockchainDeployerInterface(BlockchainInterface):
                       f"and parameters {pprint_args}")
 
         constructor_function = contract_factory.constructor(*constructor_args, **constructor_kwargs)
-        constructor_calldata = encode_constructor_arguments(self.client.w3,
-                                                            constructor_function,
-                                                            *constructor_args,
-                                                            **constructor_kwargs)
-        if constructor_calldata:
+        if constructor_calldata := encode_constructor_arguments(
+            self.client.w3,
+            constructor_function,
+            *constructor_args,
+            **constructor_kwargs,
+        ):
             self.log.info(f"Constructor calldata: {constructor_calldata}")
 
         #
@@ -878,7 +880,7 @@ class BlockchainDeployerInterface(BlockchainInterface):
                                                version=contract_factory.version,
                                                ContractFactoryClass=self._CONTRACT_FACTORY)
 
-        if enroll is True:
+        if enroll:
             registry.enroll(contract_name=contract_name,
                             contract_address=contract.address,
                             contract_abi=contract.abi,
@@ -890,7 +892,9 @@ class BlockchainDeployerInterface(BlockchainInterface):
         try:
             contract_data = self._raw_contract_cache[contract_name]
         except KeyError:
-            raise self.UnknownContract('{} is not a locally compiled contract.'.format(contract_name))
+            raise self.UnknownContract(
+                f'{contract_name} is not a locally compiled contract.'
+            )
         except TypeError:
             if self._raw_contract_cache is NO_COMPILATION_PERFORMED:
                 message = "The local contract compiler cache is empty because no compilation was performed."
@@ -900,7 +904,7 @@ class BlockchainDeployerInterface(BlockchainInterface):
         try:
             return requested_version, contract_data[requested_version]
         except KeyError:
-            if requested_version != 'latest' and requested_version != 'earliest':
+            if requested_version not in ['latest', 'earliest']:
                 available = ', '.join(contract_data.keys())
                 raise self.UnknownContract(f'Version {contract_name} of contract {contract_name} is not a locally compiled. '
                                            f'Available versions: {available}')
@@ -915,8 +919,8 @@ class BlockchainDeployerInterface(BlockchainInterface):
         for version, data in contract_data.items():
             major, minor, patch = [int(v) for v in version[1:].split(".", 3)]
             if current_version_parsed[0] == -1 or \
-               requested_version == 'latest' and (major, minor, patch) > current_version_parsed or \
-               requested_version == 'earliest' and (major, minor, patch) < current_version_parsed:
+                   requested_version == 'latest' and (major, minor, patch) > current_version_parsed or \
+                   requested_version == 'earliest' and (major, minor, patch) < current_version_parsed:
                 current_version_parsed = (major, minor, patch)
                 current_data = data
                 current_version = version
@@ -940,13 +944,15 @@ class BlockchainDeployerInterface(BlockchainInterface):
                               contract_name: str,
                               version: str = 'latest') -> VersionedContract:
         """Retrieve compiled contract data from the cache and return web3 contract instantiated for some address"""
-        contract_instance = self.__get_contract_interface(address=address, contract_name=contract_name, version=version)
-        return contract_instance
+        return self.__get_contract_interface(
+            address=address, contract_name=contract_name, version=version
+        )
 
     def get_contract_factory(self, contract_name: str, version: str = 'latest') -> VersionedContract:
         """Retrieve compiled contract data from the cache and return web3 contract factory"""
-        contract_factory = self.__get_contract_interface(contract_name=contract_name, version=version)
-        return contract_factory
+        return self.__get_contract_interface(
+            contract_name=contract_name, version=version
+        )
 
     def _wrap_contract(self,
                        wrapper_contract: VersionedContract,
@@ -957,12 +963,12 @@ class BlockchainDeployerInterface(BlockchainInterface):
         with its own address but the abi of the other.
         """
 
-        # Wrap the contract
-        wrapped_contract = self.client.w3.eth.contract(abi=target_contract.abi,
-                                                       address=wrapper_contract.address,
-                                                       version=target_contract.version,
-                                                       ContractFactoryClass=self._CONTRACT_FACTORY)
-        return wrapped_contract
+        return self.client.w3.eth.contract(
+            abi=target_contract.abi,
+            address=wrapper_contract.address,
+            version=target_contract.version,
+            ContractFactoryClass=self._CONTRACT_FACTORY,
+        )
 
     @validate_checksum_address
     def get_proxy_contract(self,
@@ -973,7 +979,7 @@ class BlockchainDeployerInterface(BlockchainInterface):
         # Lookup proxies; Search for a registered proxy that targets this contract record
         records = registry.search(contract_name=proxy_name)
 
-        dispatchers = list()
+        dispatchers = []
         for name, version, address, abi in records:
             proxy_contract = self.client.w3.eth.contract(abi=abi,
                                                          address=address,
@@ -1086,12 +1092,11 @@ class BlockchainInterfaceFactory:
                 raise cls.InterfaceNotInitialized(f"There is no connection for {eth_provider_uri}. "
                                                   f"Call .initialize_connection, then try again.")
 
-        # Try to use the most recently created interface by default.
         else:
             try:
                 cached_interface = list(cls._interfaces.values())[-1]
             except IndexError:
-                raise cls.NoRegisteredInterfaces(f"There is no existing blockchain connection.")
+                raise cls.NoRegisteredInterfaces("There is no existing blockchain connection.")
 
         # Connect and Sync
         interface, emitter = cached_interface

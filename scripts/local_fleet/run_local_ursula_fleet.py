@@ -16,6 +16,7 @@ along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+
 # WARNING This is not a mining script!
 # you will not perform any re-encryptions, and you will not get paid.
 # It might be (but might not be) useful for determining whether you have
@@ -30,7 +31,7 @@ from twisted.internet import reactor
 
 FLEET_POPULATION = 5
 DEMO_NODE_STARTING_PORT = 11501
-TEACHER_URI = f'127.0.0.1:11500'
+TEACHER_URI = '127.0.0.1:11500'
 
 
 def spin_up_federated_ursulas(quantity: int = FLEET_POPULATION):
@@ -39,9 +40,8 @@ def spin_up_federated_ursulas(quantity: int = FLEET_POPULATION):
     starting_port = DEMO_NODE_STARTING_PORT
     ports = list(map(str, range(starting_port, starting_port + quantity)))
 
-    ursula_processes = list()
-    for index, port in enumerate(ports):
-
+    ursula_processes = []
+    for port in ports:
         args = ['nucypher',
                 'ursula', 'run',
                 '--debug',

@@ -90,18 +90,17 @@ class BaseActor:
         self.transacting_power = transacting_power
         self.registry = registry
         self.network = domain
-        self._saved_receipts = list()  # track receipts of transmitted transactions
+        self._saved_receipts = []
 
     def __repr__(self):
         class_name = self.__class__.__name__
         r = "{}(address='{}')"
-        r = r.format(class_name, self.checksum_address)
-        return r
+        return r.format(class_name, self.checksum_address)
 
     def __eq__(self, other) -> bool:
         """Actors are equal if they have the same address."""
         try:
-            return bool(self.checksum_address == other.checksum_address)
+            return self.checksum_address == other.checksum_address
         except AttributeError:
             return False
 
@@ -137,8 +136,7 @@ class NucypherTokenActor(BaseActor):
     def token_balance(self) -> NU:
         """Return this actor's current token balance"""
         balance = int(self.token_agent.get_balance(address=self.checksum_address))
-        nu_balance = NU(balance, 'NuNit')
-        return nu_balance
+        return NU(balance, 'NuNit')
 
 
 class ContractAdministrator(BaseActor):
@@ -187,8 +185,9 @@ class ContractAdministrator(BaseActor):
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
-        r = '{name} - {deployer_address})'.format(name=self.__class__.__name__, deployer_address=self.checksum_address)
-        return r
+        return '{name} - {deployer_address})'.format(
+            name=self.__class__.__name__, deployer_address=self.checksum_address
+        )
 
     def __get_deployer(self, contract_name: str):
         try:
@@ -246,10 +245,11 @@ class ContractAdministrator(BaseActor):
             raise self.ActorError('No transacting power available for deployment.')
         Deployer = self.__get_deployer(contract_name=contract_name)
         deployer = Deployer(registry=self.registry)
-        receipts = deployer.upgrade(transacting_power=self.transacting_power,
-                                    ignore_deployed=ignore_deployed,
-                                    confirmations=confirmations)
-        return receipts
+        return deployer.upgrade(
+            transacting_power=self.transacting_power,
+            ignore_deployed=ignore_deployed,
+            confirmations=confirmations,
+        )
 
     def retarget_proxy(self,
                        confirmations: int,
@@ -261,19 +261,19 @@ class ContractAdministrator(BaseActor):
             raise self.ActorError('No transacting power available for deployment.')
         Deployer = self.__get_deployer(contract_name=contract_name)
         deployer = Deployer(registry=self.registry)
-        result = deployer.retarget(transacting_power=self.transacting_power,
-                                   target_address=target_address,
-                                   just_build_transaction=just_build_transaction,
-                                   confirmations=confirmations)
-        return result
+        return deployer.retarget(
+            transacting_power=self.transacting_power,
+            target_address=target_address,
+            just_build_transaction=just_build_transaction,
+            confirmations=confirmations,
+        )
 
     def rollback_contract(self, contract_name: str):
         if not self.transacting_power:
             raise self.ActorError('No transacting power available for deployment.')
         Deployer = self.__get_deployer(contract_name=contract_name)
         deployer = Deployer(registry=self.registry)
-        receipts = deployer.rollback(transacting_power=self.transacting_power)
-        return receipts
+        return deployer.rollback(transacting_power=self.transacting_power)
 
     def save_deployment_receipts(self, receipts: dict, filename_prefix: str = 'deployment') -> str:
         config_root = DEFAULT_CONFIG_ROOT  # We force the use of the default here.
@@ -281,9 +281,9 @@ class ContractAdministrator(BaseActor):
         filepath = config_root / filename
         config_root.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w') as file:
-            data = dict()
+            data = {}
             for contract_name, contract_receipts in receipts.items():
-                contract_records = dict()
+                contract_records = {}
                 for tx_name, receipt in contract_receipts.items():
                     # Formatting
                     pretty_receipt = {item: str(result) for item, result in receipt.items()}
@@ -341,8 +341,9 @@ class Operator(BaseActor):
         return self.application_agent.is_operator_confirmed(self.operator_address)
 
     def confirm_address(self, fire_and_forget: bool = True) -> Union[TxReceipt, HexBytes]:
-        txhash_or_receipt = self.application_agent.confirm_operator_address(self.transacting_power, fire_and_forget=fire_and_forget)
-        return txhash_or_receipt
+        return self.application_agent.confirm_operator_address(
+            self.transacting_power, fire_and_forget=fire_and_forget
+        )
 
     def block_until_ready(self, poll_rate: int = None, timeout: int = None):
         emitter = StdoutEmitter()
@@ -358,9 +359,7 @@ class Operator(BaseActor):
                 raise self.ActorError(message)
 
             if not funded:
-                # check for funds
-                ether_balance = client.get_balance(self.operator_address)
-                if ether_balance:
+                if ether_balance := client.get_balance(self.operator_address):
                     # funds found
                     funded, balance = True, Web3.fromWei(ether_balance, 'ether')
                     emitter.message(f"✓ Operator {self.operator_address} is funded with {balance} ETH", color='green')
@@ -396,8 +395,7 @@ class BlockchainPolicyAuthor(NucypherTokenActor):
     def create_policy(self, *args, **kwargs):
         """Hence the name, a BlockchainPolicyAuthor can create a BlockchainPolicy with themself as the author."""
         from nucypher.policy.policies import BlockchainPolicy
-        blockchain_policy = BlockchainPolicy(publisher=self, *args, **kwargs)
-        return blockchain_policy
+        return BlockchainPolicy(publisher=self, *args, **kwargs)
 
 
 class Investigator(NucypherTokenActor):
@@ -413,9 +411,9 @@ class Investigator(NucypherTokenActor):
 
     @save_receipt
     def request_evaluation(self, evidence) -> dict:
-        receipt = self.adjudicator_agent.evaluate_cfrag(evidence=evidence, transacting_power=self.transacting_power)
-        return receipt
+        return self.adjudicator_agent.evaluate_cfrag(
+            evidence=evidence, transacting_power=self.transacting_power
+        )
 
     def was_this_evidence_evaluated(self, evidence) -> bool:
-        result = self.adjudicator_agent.was_this_evidence_evaluated(evidence=evidence)
-        return result
+        return self.adjudicator_agent.was_this_evidence_evaluated(evidence=evidence)

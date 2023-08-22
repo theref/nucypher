@@ -113,11 +113,11 @@ class FleetState:
             if unknown or bytes(self._nodes[node.checksum_address].metadata()) != bytes(node.metadata()):
                 nodes_updated.append(node.checksum_address)
 
-        nodes_removed = []
-        for checksum_address in nodes_to_remove:
-            if checksum_address in self._nodes:
-                nodes_removed.append(checksum_address)
-
+        nodes_removed = [
+            checksum_address
+            for checksum_address in nodes_to_remove
+            if checksum_address in self._nodes
+        ]
         return StateDiff(this_node_updated=this_node_updated,
                          nodes_updated=nodes_updated,
                          nodes_removed=nodes_removed)

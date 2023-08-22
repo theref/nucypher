@@ -98,8 +98,9 @@ class UrsulaConfiguration(CharacterConfiguration):
         return base_filepaths
 
     def generate_filepath(self, modifier: str = None, *args, **kwargs) -> Path:
-        filepath = super().generate_filepath(modifier=modifier or self.keystore.id[:8], *args, **kwargs)
-        return filepath
+        return super().generate_filepath(
+            modifier=modifier or self.keystore.id[:8], *args, **kwargs
+        )
 
     def static_payload(self) -> dict:
         payload = dict(

@@ -41,21 +41,16 @@ class TransportTrap:
 
     def read(self, lines: int = 1):
 
-        # Read from faked buffer
-        results = list()
-        for readop in range(lines):
-            results.append(self.buffer.popleft())
-
+        results = [self.buffer.popleft() for _ in range(lines)]
         # return the popped values
-        if not lines > 1:
+        if lines <= 1:
             results = results[0]
         return results
 
     def write(self, data) -> int:
         if data != '\n':
             self.buffer.append(data)
-        size = len(data)
-        return size
+        return len(data)
 
     def flush(self) -> None:
         pass
@@ -64,8 +59,7 @@ class TransportTrap:
 @pytest.fixture(scope='module')
 def rpc_protocol(federated_alice):
     rpc_controller = federated_alice.make_rpc_controller()
-    protocol = JSONRPCLineReceiver(rpc_controller=rpc_controller, capture_output=True)
-    yield protocol
+    yield JSONRPCLineReceiver(rpc_controller=rpc_controller, capture_output=True)
 
 
 def test_alice_rpc_controller_creation(federated_alice):

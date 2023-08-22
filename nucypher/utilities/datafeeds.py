@@ -70,8 +70,7 @@ class EthereumGasPriceDatafeed(Datafeed):
     def get_gas_price(self, speed: Optional[str] = None) -> Wei:
         speed = speed or self._default_speed
         self._parse_gas_prices()
-        gas_price_wei = Wei(self.gas_prices[self.get_canonical_speed(speed)])
-        return gas_price_wei
+        return Wei(self.gas_prices[self.get_canonical_speed(speed)])
 
     @classmethod
     def construct_gas_strategy(cls, speed: Optional[str] = None):
@@ -88,12 +87,11 @@ class EthereumGasPriceDatafeed(Datafeed):
                 return canonical_speed
         else:
             all_speed_names = [name for names in cls._speed_equivalence_classes.values() for name in names]
-            suggestion = get_close_matches(speed, all_speed_names, n=1)
-            if not suggestion:
-                message = f"'{speed}' is not a valid speed name."
-            else:
+            if suggestion := get_close_matches(speed, all_speed_names, n=1):
                 suggestion = suggestion.pop()
                 message = f"'{speed}' is not a valid speed name. Did you mean '{suggestion}'?"
+            else:
+                message = f"'{speed}' is not a valid speed name."
             raise LookupError(message)
 
 
@@ -149,7 +147,7 @@ class ZoltuGasPriceDatafeed(EthereumGasPriceDatafeed):
 
     def _parse_gas_prices(self):
         self._probe_feed()
-        self.gas_prices = dict()
+        self.gas_prices = {}
         for canonical_speed_name, zoltu_speed in self._speed_names.items():
             gwei_price = self._raw_data[zoltu_speed].split(" ")[0]
             wei_price = int(Web3.toWei(gwei_price, 'gwei'))

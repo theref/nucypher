@@ -16,6 +16,7 @@
 """
 
 
+
 import datetime
 import os
 from getpass import getpass
@@ -159,8 +160,7 @@ with open(BOOK_PATH, 'rb') as file:
 
 print("\n**************James Joyce's Finnegan's Wake (Excerpt)**************\n")
 
-for counter, plaintext in enumerate(finnegans_wake):
-
+for plaintext in finnegans_wake:
     # Enrico knows the policy's public key from a side-channel.
     enrico = Enrico(policy_encrypting_key=policy_public_key)
 

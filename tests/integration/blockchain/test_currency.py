@@ -27,7 +27,7 @@ def test_NU(application_economics):
     min_allowed_locked = NU(application_economics.min_authorization, 'NuNit')
     assert application_economics.min_authorization == int(min_allowed_locked.to_units())
 
-    min_NU_locked = int(str(application_economics.min_authorization)[0:-18])
+    min_NU_locked = int(str(application_economics.min_authorization)[:-18])
     expected = NU(min_NU_locked, 'NU')
     assert min_allowed_locked == expected
 
@@ -67,7 +67,7 @@ def test_NU(application_economics):
     assert (three_hundred_nu - two_hundred_nu) == one_hundred_nu
 
     difference = one_nu - one_nu_wei
-    assert not difference == zero_nu
+    assert difference != zero_nu
 
     actual = float(difference.to_tokens())
     expected = 0.999999999999999999

@@ -68,7 +68,7 @@ def test_alice_can_grant_even_when_the_first_nodes_she_tries_are_down(federated_
         alice_grant_action()
 
     # Now let's let a few of them come up.
-    for node in more_nodes[0:4]:
+    for node in more_nodes[:4]:
         federated_alice.network_middleware.node_is_up(node)
 
     # Now the same exact action works.

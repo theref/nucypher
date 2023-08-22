@@ -37,12 +37,9 @@ def test_operator_never_bonded(mocker, get_random_checksum_address):
 
     tracker = OperatorBondedTracker(ursula=ursula)
     try:
-        d = threads.deferToThread(tracker.start)
-        yield d
-
+        yield threads.deferToThread(tracker.start)
         with pytest.raises(OperatorBondedTracker.OperatorNoLongerBonded):
-            d = threads.deferToThread(tracker.run)
-            yield d
+            yield threads.deferToThread(tracker.run)
     finally:
         application_agent.get_staking_provider_from_operator.assert_called_once()
         ursula.stop.assert_called_once_with(halt_reactor=True)  # stop entire reactor
@@ -63,21 +60,17 @@ def test_operator_bonded_but_becomes_unbonded(mocker, get_random_checksum_addres
 
     tracker = OperatorBondedTracker(ursula=ursula)
     try:
-        d = threads.deferToThread(tracker.start)
-        yield d
-
+        yield threads.deferToThread(tracker.start)
         # bonded
         for i in range(1, 10):
-            d = threads.deferToThread(tracker.run)
-            yield d
+            yield threads.deferToThread(tracker.run)
             assert application_agent.get_staking_provider_from_operator.call_count == i, "check for operator bonded called"
             ursula.stop.assert_not_called()
 
         # becomes unbonded
         application_agent.get_staking_provider_from_operator.return_value = NULL_ADDRESS
         with pytest.raises(OperatorBondedTracker.OperatorNoLongerBonded):
-            d = threads.deferToThread(tracker.run)
-            yield d
+            yield threads.deferToThread(tracker.run)
     finally:
         ursula.stop.assert_called_once_with(halt_reactor=True)  # stop entire reactor
         tracker.stop()

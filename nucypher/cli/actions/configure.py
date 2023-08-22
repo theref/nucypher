@@ -140,7 +140,7 @@ def collect_operator_ip_address(emitter: StdoutEmitter, network: str, force: boo
 
     # From node swarm
     try:
-        message = f'Detecting external IP address automatically'
+        message = 'Detecting external IP address automatically'
         emitter.message(message, verbosity=2)
         ip = determine_external_ip_address(network=network)
     except UnknownIPAddress:
@@ -149,7 +149,6 @@ def collect_operator_ip_address(emitter: StdoutEmitter, network: str, force: boo
         emitter.message('Cannot automatically determine external IP address - input required')
         ip = click.prompt(COLLECT_URSULA_IPV4_ADDRESS, type=OPERATOR_IP)
 
-    # Confirmation
     if not force:
         if not click.confirm(CONFIRM_URSULA_IPV4_ADDRESS.format(rest_host=ip)):
             ip = click.prompt(COLLECT_URSULA_IPV4_ADDRESS, type=OPERATOR_IP)

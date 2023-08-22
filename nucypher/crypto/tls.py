@@ -41,8 +41,10 @@ def _write_tls_certificate(certificate: Certificate,
                            force: bool = False,
                            ) -> Path:
     cert_already_exists = full_filepath.is_file()
-    if force is False and cert_already_exists:
-        raise FileExistsError('A TLS certificate already exists at {}.'.format(full_filepath.resolve()))
+    if not force and cert_already_exists:
+        raise FileExistsError(
+            f'A TLS certificate already exists at {full_filepath.resolve()}.'
+        )
 
     with open(full_filepath, 'wb') as certificate_file:
         public_pem_bytes = certificate.public_bytes(_TLS_CERTIFICATE_ENCODING)
@@ -54,10 +56,11 @@ def _read_tls_certificate(filepath: Path) -> Certificate:
     """Deserialize an X509 certificate from a filepath"""
     try:
         with open(filepath, 'rb') as certificate_file:
-            cert = x509.load_der_x509_certificate(certificate_file.read(), backend=default_backend())
-            return cert
+            return x509.load_der_x509_certificate(
+                certificate_file.read(), backend=default_backend()
+            )
     except FileNotFoundError:
-        raise FileNotFoundError("No SSL certificate found at {}".format(filepath))
+        raise FileNotFoundError(f"No SSL certificate found at {filepath}")
 
 
 def generate_self_signed_certificate(host: str,

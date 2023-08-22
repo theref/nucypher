@@ -111,12 +111,9 @@ class EthereumContractAgent:
             transaction_gas = EthereumContractAgent.DEFAULT_TRANSACTION_GAS_LIMITS['default']
         self.transaction_gas = transaction_gas
 
-        self.log.info("Initialized new {} for {} with {} and {}".format(
-            self.__class__.__name__,
-            self.contract.address,
-            self.blockchain.eth_provider_uri,
-            str(self.registry)
-        ))
+        self.log.info(
+            f"Initialized new {self.__class__.__name__} for {self.contract.address} with {self.blockchain.eth_provider_uri} and {str(self.registry)}"
+        )
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -124,7 +121,7 @@ class EthereumContractAgent:
         return r.format(class_name, str(self.registry), self.contract_name)
 
     def __eq__(self, other: Any) -> bool:
-        return bool(self.contract.address == other.contract.address)
+        return self.contract.address == other.contract.address
 
     @property  # type: ignore
     def contract(self) -> Contract:
@@ -137,10 +134,7 @@ class EthereumContractAgent:
     @property  # type: ignore
     @contract_api(CONTRACT_ATTRIBUTE)
     def owner(self) -> Optional[ChecksumAddress]:
-        if not self._proxy_name:
-            # Only upgradeable + ownable contracts can implement ownership transference.
-            return None
-        return self.contract.functions.owner().call()
+        return None if not self._proxy_name else self.contract.functions.owner().call()
 
 
 class NucypherTokenAgent(EthereumContractAgent):
@@ -217,9 +211,7 @@ class NucypherTokenAgent(EthereumContractAgent):
                          ) -> TxReceipt:
         self._validate_zero_allowance(amount, target_address, transacting_power)
 
-        payload = None
-        if gas_limit:  # TODO: Gas management - #842
-            payload = {'gas': gas_limit}
+        payload = {'gas': gas_limit} if gas_limit else None
         approve_and_call: ContractFunction = self.contract.functions.approveAndCall(target_address, amount, call_data)
         approve_and_call_receipt: TxReceipt = self.blockchain.send_transaction(contract_function=approve_and_call,
                                                                                transacting_power=transacting_power,
@@ -257,21 +249,19 @@ class SubscriptionManagerAgent(EthereumContractAgent):
 
     @contract_api(CONTRACT_CALL)
     def is_policy_active(self, policy_id: bytes) -> bool:
-        result = self.contract.functions.isPolicyActive(policy_id).call()
-        return result
+        return self.contract.functions.isPolicyActive(policy_id).call()
 
     @contract_api(CONTRACT_CALL)
     def fetch_policy(self, policy_id: bytes) -> PolicyInfo:
         record = self.contract.functions.policies(policy_id).call()
-        policy_info = self.PolicyInfo(
+        return self.PolicyInfo(
             sponsor=record[0],
             start_timestamp=record[1],
             end_timestamp=record[2],
             size=record[3],
             # If the policyOwner addr is null, we return the sponsor addr instead of the owner.
-            owner=record[0] if record[4] == NULL_ADDRESS else record[4]
+            owner=record[0] if record[4] == NULL_ADDRESS else record[4],
         )
-        return policy_info
 
     #
     # Transactions
@@ -295,12 +285,11 @@ class SubscriptionManagerAgent(EthereumContractAgent):
             start_timestamp,
             end_timestamp
         )
-        receipt = self.blockchain.send_transaction(
+        return self.blockchain.send_transaction(
             contract_function=contract_function,
             payload=payload,
-            transacting_power=transacting_power
+            transacting_power=transacting_power,
         )
-        return receipt
 
 
 class AdjudicatorAgent(EthereumContractAgent):
@@ -313,10 +302,11 @@ class AdjudicatorAgent(EthereumContractAgent):
         """Submits proof that a worker created wrong CFrag"""
         payload: TxParams = {'gas': Wei(500_000)}  # TODO TransactionFails unless gas is provided.
         contract_function: ContractFunction = self.contract.functions.evaluateCFrag(*evidence.evaluation_arguments())
-        receipt = self.blockchain.send_transaction(contract_function=contract_function,
-                                                   transacting_power=transacting_power,
-                                                   payload=payload)
-        return receipt
+        return self.blockchain.send_transaction(
+            contract_function=contract_function,
+            transacting_power=transacting_power,
+            payload=payload,
+        )
 
     @contract_api(CONTRACT_CALL)
     def was_this_evidence_evaluated(self, evidence) -> bool:
@@ -392,54 +382,49 @@ class PREApplicationAgent(EthereumContractAgent):
 
     @contract_api(CONTRACT_CALL)
     def get_min_authorization(self) -> int:
-        result = self.contract.functions.minAuthorization().call()
-        return result
+        return self.contract.functions.minAuthorization().call()
 
     @contract_api(CONTRACT_CALL)
     def get_min_operator_seconds(self) -> int:
-        result = self.contract.functions.minOperatorSeconds().call()
-        return result
+        return self.contract.functions.minOperatorSeconds().call()
 
     @contract_api(CONTRACT_CALL)
     def get_staking_provider_from_operator(self, operator_address: ChecksumAddress) -> ChecksumAddress:
-        result = self.contract.functions.stakingProviderFromOperator(operator_address).call()
-        return result
+        return self.contract.functions.stakingProviderFromOperator(
+            operator_address
+        ).call()
 
     @contract_api(CONTRACT_CALL)
     def get_operator_from_staking_provider(self, staking_provider: ChecksumAddress) -> ChecksumAddress:
-        result = self.contract.functions.getOperatorFromStakingProvider(staking_provider).call()
-        return result
+        return self.contract.functions.getOperatorFromStakingProvider(
+            staking_provider
+        ).call()
 
     @contract_api(CONTRACT_CALL)
     def get_beneficiary(self, staking_provider: ChecksumAddress) -> ChecksumAddress:
-        result = self.contract.functions.getBeneficiary(staking_provider).call()
-        return result
+        return self.contract.functions.getBeneficiary(staking_provider).call()
 
     @contract_api(CONTRACT_CALL)
     def is_operator_confirmed(self, address: ChecksumAddress) -> bool:
-        result = self.contract.functions.isOperatorConfirmed(address).call()
-        return result
+        return self.contract.functions.isOperatorConfirmed(address).call()
 
     @contract_api(CONTRACT_CALL)
     def get_staking_provider_info(self, staking_provider: ChecksumAddress) -> StakingProviderInfo:
         # remove reserved fields
         info: list = self.contract.functions.stakingProviderInfo(staking_provider).call()
-        return StakingProviderInfo(*info[0:3])
+        return StakingProviderInfo(*info[:3])
 
     @contract_api(CONTRACT_CALL)
     def get_authorized_stake(self, staking_provider: ChecksumAddress) -> int:
-        result = self.contract.functions.authorizedStake(staking_provider).call()
-        return result
+        return self.contract.functions.authorizedStake(staking_provider).call()
 
     @contract_api(CONTRACT_CALL)
     def is_authorized(self, staking_provider: ChecksumAddress) -> bool:
-        result = self.contract.functions.isAuthorized(staking_provider).call()
-        return result
+        return self.contract.functions.isAuthorized(staking_provider).call()
 
     @contract_api(CONTRACT_CALL)
     def get_staking_providers_population(self) -> int:
-        result = self.contract.functions.getStakingProvidersLength().call()
-        return result
+        return self.contract.functions.getStakingProvidersLength().call()
 
     @contract_api(CONTRACT_CALL)
     def get_staking_providers(self) -> List[ChecksumAddress]:
@@ -450,14 +435,14 @@ class PREApplicationAgent(EthereumContractAgent):
 
     @contract_api(CONTRACT_CALL)
     def get_active_staking_providers(self, start_index: int, max_results: int) -> Iterable:
-        result = self.contract.functions.getActiveStakingProviders(start_index, max_results).call()
-        return result
+        return self.contract.functions.getActiveStakingProviders(
+            start_index, max_results
+        ).call()
 
     @contract_api(CONTRACT_CALL)
     def swarm(self) -> Iterable[ChecksumAddress]:
         for index in range(self.get_staking_providers_population()):
-            address: ChecksumAddress = self.contract.functions.stakingProviders(index).call()
-            yield address
+            yield self.contract.functions.stakingProviders(index).call()
 
     @contract_api(CONTRACT_CALL)
     def get_all_active_staking_providers(self, pagination_size: Optional[int] = None) -> Tuple[TuNits, Dict[ChecksumAddress, TuNits]]:
@@ -472,7 +457,7 @@ class PREApplicationAgent(EthereumContractAgent):
             num_providers: int = self.get_staking_providers_population()
             start_index: int = 0
             n_tokens: int = 0
-            staking_providers: Dict[int, int] = dict()
+            staking_providers: Dict[int, int] = {}
             attempts: int = 0
             while start_index < num_providers:
                 try:
@@ -494,14 +479,14 @@ class PREApplicationAgent(EthereumContractAgent):
                 else:
                     temp_authorized_tokens, temp_staking_providers = active_staking_providers
                     # temp_staking_providers is a list of length-2 lists (address -> authorized tokens)
-                    temp_staking_providers = {address: authorized_tokens for address, authorized_tokens in temp_staking_providers}
+                    temp_staking_providers = dict(temp_staking_providers)
                     n_tokens = n_tokens + temp_authorized_tokens
                     staking_providers.update(temp_staking_providers)
                     start_index += pagination_size
 
         else:
             n_tokens, temp_staking_providers = self.get_active_staking_providers(start_index=0, max_results=0)
-            staking_providers = {address: authorized_tokens for address, authorized_tokens in temp_staking_providers}
+            staking_providers = dict(temp_staking_providers)
 
         # staking provider's addresses are returned as uint256 by getActiveStakingProviders(), convert to address objects
         def checksum_address(address: int) -> ChecksumAddress:
@@ -531,7 +516,7 @@ class PREApplicationAgent(EthereumContractAgent):
         self.log.debug(f"Got {len(stake_provider_map)} staking providers with {n_tokens} total tokens "
                        f"({filtered_out} filtered out)")
         if n_tokens == 0:
-            raise self.NotEnoughStakingProviders(f'There are no locked tokens.')
+            raise self.NotEnoughStakingProviders('There are no locked tokens.')
 
         return StakingProvidersReservoir(stake_provider_map)
 
@@ -543,19 +528,20 @@ class PREApplicationAgent(EthereumContractAgent):
     def confirm_operator_address(self, transacting_power: TransactingPower, fire_and_forget: bool = True) -> TxReceipt:
         """Confirm the sender's account as a operator"""
         contract_function: ContractFunction = self.contract.functions.confirmOperatorAddress()
-        receipt = self.blockchain.send_transaction(contract_function=contract_function,
-                                                   transacting_power=transacting_power,
-                                                   fire_and_forget=fire_and_forget
-                                                   )
-        return receipt
+        return self.blockchain.send_transaction(
+            contract_function=contract_function,
+            transacting_power=transacting_power,
+            fire_and_forget=fire_and_forget,
+        )
 
     @contract_api(TRANSACTION)
     def bond_operator(self, staking_provider: ChecksumAddress, operator: ChecksumAddress, transacting_power: TransactingPower) -> TxReceipt:
         """For use by threshold operator accounts only."""
         contract_function: ContractFunction = self.contract.functions.bondOperator(staking_provider, operator)
-        receipt = self.blockchain.send_transaction(contract_function=contract_function,
-                                                   transacting_power=transacting_power)
-        return receipt
+        return self.blockchain.send_transaction(
+            contract_function=contract_function,
+            transacting_power=transacting_power,
+        )
 
 
 class ContractAgency:
@@ -573,20 +559,19 @@ class ContractAgency:
                   ) -> Agent:
 
         if not issubclass(agent_class, EthereumContractAgent):
-            raise TypeError(f"Only agent subclasses can be used from the agency.")
+            raise TypeError("Only agent subclasses can be used from the agency.")
 
-        if not registry:
-            if len(cls.__agents) == 1:
-                registry_id = list(cls.__agents.keys()).pop()
-            else:
-                raise ValueError("Need to specify a registry in order to get an agent from the ContractAgency")
-        else:
+        if registry:
             registry_id = registry.id
+        elif len(cls.__agents) == 1:
+            registry_id = list(cls.__agents.keys()).pop()
+        else:
+            raise ValueError("Need to specify a registry in order to get an agent from the ContractAgency")
         try:
             return cast(Agent, cls.__agents[registry_id][agent_class])
         except KeyError:
             agent = cast(Agent, agent_class(registry=registry, eth_provider_uri=eth_provider_uri, contract_version=contract_version))
-            cls.__agents[registry_id] = cls.__agents.get(registry_id, dict())
+            cls.__agents[registry_id] = cls.__agents.get(registry_id, {})
             cls.__agents[registry_id][agent_class] = agent
             return agent
 
@@ -595,8 +580,7 @@ class ContractAgency:
         if name == NUCYPHER_TOKEN_CONTRACT_NAME:
             # TODO: Perhaps rename NucypherTokenAgent
             name = "NucypherToken"
-        agent_name = f"{name}Agent"
-        return agent_name
+        return f"{name}Agent"
 
     @classmethod
     def get_agent_by_contract_name(cls,
@@ -649,7 +633,7 @@ class WeightedSampler:
 
         samples = []
 
-        for i in range(quantity):
+        for _ in range(quantity):
             position = rng.randint(0, self.totals[-1] - 1)
             idx = bisect_right(self.totals, position)
             samples.append(self.elements[idx])

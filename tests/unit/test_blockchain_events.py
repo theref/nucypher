@@ -78,9 +78,6 @@ def test_contract_events_throttler_inclusive_block_ranges():
         max_blocks_per_call=1
     )
 
-    for _ in events_throttler:
-        pass
-
     # check calls to filter
     # ranges used = (0, 1), (2, 3), (4, 5), (6, 7), (8, 9), (10, 10)
     assert mock_method.call_count == 6
@@ -105,9 +102,6 @@ def test_contract_events_throttler_inclusive_block_ranges():
         max_blocks_per_call=5,
         **argument_filters
     )
-
-    for _ in events_throttler:
-        pass
 
     # check calls to filter
     # ranges used = (0, 5), (6, 11), (12, 17) (18, 21)

@@ -136,11 +136,11 @@ class UrsulaInfoMetricsCollector(BaseMetricsCollector):
             authorized = application_agent.get_authorized_stake(staking_provider=self.ursula.checksum_address)
             decentralized_payload = {'provider': str(self.ursula.eth_provider_uri),
                                      'active_stake': str(authorized)}
-            base_payload.update(decentralized_payload)
+            base_payload |= decentralized_payload
 
-            # TODO: Arrangements are deprecated and Policies are no longer trackable by arrangement storage.
-            # policy_arrangements = get_policy_arrangements(self.ursula.datastore)
-            # self.metrics["policies_held_gauge"].set(len(policy_arrangements))
+                # TODO: Arrangements are deprecated and Policies are no longer trackable by arrangement storage.
+                # policy_arrangements = get_policy_arrangements(self.ursula.datastore)
+                # self.metrics["policies_held_gauge"].set(len(policy_arrangements))
 
         self.metrics["host_info"].info(base_payload)
 
@@ -259,7 +259,7 @@ class EventMetricsCollector(BaseMetricsCollector):
         self.event_args_config = event_args_config
 
     def initialize(self, metrics_prefix: str, registry: CollectorRegistry) -> None:
-        self.metrics = dict()
+        self.metrics = {}
         for arg_name in self.event_args_config:
             metric_class, metric_name, metric_doc = self.event_args_config[arg_name]
             metric_key = self._get_arg_metric_key(arg_name)

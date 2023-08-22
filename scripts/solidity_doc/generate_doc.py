@@ -78,7 +78,7 @@ def generate_doc() -> None:
 
         # Merge, update and generate resulting rst
         no_version = next(iter(data.values()))
-        docs = merge_and_update(no_version["userdoc"], dict())
+        docs = merge_and_update(no_version["userdoc"], {})
         docs = merge_and_update(no_version["devdoc"], docs)
         rst = schema2rst(docs, "kind,version,title", contract)
 

@@ -35,21 +35,21 @@ def make_header(brand: bytes, major: int, minor: int) -> bytes:
     assert len(brand) == 4
     major_bytes = major.to_bytes(2, 'big')
     minor_bytes = minor.to_bytes(2, 'big')
-    header = brand + major_bytes + minor_bytes
-    return header
+    return brand + major_bytes + minor_bytes
 
 
 class BaseTestNodeStorageBackends:
 
     @pytest.fixture(scope='class')
     def light_ursula(temp_dir_path):
-        node = Ursula(rest_host=LOOPBACK_ADDRESS,
-                      rest_port=MOCK_URSULA_STARTING_PORT,
-                      db_filepath=MOCK_URSULA_DB_FILEPATH,
-                      federated_only=True,
-                      domain=TEMPORARY_DOMAIN,
-                      payment_method=FreeReencryptions())
-        yield node
+        yield Ursula(
+            rest_host=LOOPBACK_ADDRESS,
+            rest_port=MOCK_URSULA_STARTING_PORT,
+            db_filepath=MOCK_URSULA_DB_FILEPATH,
+            federated_only=True,
+            domain=TEMPORARY_DOMAIN,
+            payment_method=FreeReencryptions(),
+        )
 
     character_class = Ursula
     federated_only = True
@@ -62,7 +62,7 @@ class BaseTestNodeStorageBackends:
         # Read Node
         node_from_storage = node_storage.get(stamp=ursula.stamp,
                                              federated_only=True)
-        assert ursula == node_from_storage, "Node storage {} failed".format(node_storage)
+        assert ursula == node_from_storage, f"Node storage {node_storage} failed"
 
         # Save more nodes
         all_known_nodes = set()
@@ -87,7 +87,7 @@ class BaseTestNodeStorageBackends:
         assert known_checksums == stored_checksums
 
         # Read random nodes
-        for i in range(3):
+        for _ in range(3):
             random_node = all_known_nodes.pop()
             random_node_from_storage = node_storage.get(stamp=random_node.stamp, federated_only=True)
             assert random_node.checksum_address == random_node_from_storage.checksum_address

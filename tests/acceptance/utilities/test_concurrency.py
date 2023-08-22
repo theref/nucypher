@@ -36,9 +36,8 @@ class AllAtOnceFactory:
     def __call__(self, _successes):
         if self._produced:
             return None
-        else:
-            self._produced = True
-            return self.values
+        self._produced = True
+        return self.values
 
 
 @pytest.fixture(scope='function')
@@ -253,7 +252,6 @@ class BatchFactory:
         elif len(self.values) > 0:
             self.batch_sizes.append(len(self.values))
             return self.values
-            self.values = None
         else:
             return None
 
@@ -334,12 +332,11 @@ class BuggyFactory:
         self.values = values
 
     def __call__(self, successes):
-        if self.values is not None:
-            values = self.values
-            self.values = None
-            return values
-        else:
+        if self.values is None:
             raise Exception("Buggy factory")
+        values = self.values
+        self.values = None
+        return values
 
 
 def test_buggy_factory_raises_on_block():

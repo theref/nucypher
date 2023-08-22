@@ -32,12 +32,11 @@ def make_federated_staker_reservoir(known_nodes: FleetSensor,
     # so that they aren't included in reservoir, include_address will be re-added to reservoir afterwards
     include_addresses = include_addresses or ()
     exclusion_set = set(include_addresses) | set(exclude_addresses or ())
-    addresses = {}
-    for ursula in known_nodes:
-        if ursula.checksum_address in exclusion_set:
-            continue
-        addresses[ursula.checksum_address] = 1
-
+    addresses = {
+        ursula.checksum_address: 1
+        for ursula in known_nodes
+        if ursula.checksum_address not in exclusion_set
+    }
     # add include addresses
     return MergedReservoir(include_addresses, StakingProvidersReservoir(addresses))
 
@@ -95,11 +94,9 @@ class PrefetchStrategy:
 
     def __call__(self, successes: int) -> Optional[List[ChecksumAddress]]:
         batch = []
-        for i in range(self.need_successes - successes):
+        for _ in range(self.need_successes - successes):
             value = self.reservoir()
             if value is None:
                 break
             batch.append(value)
-        if not batch:
-            return None
-        return batch
+        return None if not batch else batch

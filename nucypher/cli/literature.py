@@ -15,6 +15,7 @@
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 """Text blobs that are implemented as part of nucypher CLI emitter messages."""
 
 
@@ -164,7 +165,7 @@ DEFAULT_TO_LONE_CONFIG_FILE = "Defaulting to {config_class} configuration file: 
 #  Authentication
 #
 
-PASSWORD_COLLECTION_NOTICE = f"""
+PASSWORD_COLLECTION_NOTICE = """
 Please provide a password to lock Operator keys.
 Do not forget this password, and ideally store it using a password manager.
 """

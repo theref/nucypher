@@ -51,8 +51,7 @@ def __execute(compiler_version: VersionString, input_config: Dict, allow_paths: 
         raise CompilationError(f"The solidity compiler binary at {solc_binary_path} is not executable. "
                                "Check the file's permissions.")
 
-    errors = compiler_output.get('errors')
-    if errors:
+    if errors := compiler_output.get('errors'):
         formatted = '\n'.join([error['formattedMessage'] for error in errors])
         SOLC_LOGGER.warn(f"Errors during compilation: \n{formatted}")
 

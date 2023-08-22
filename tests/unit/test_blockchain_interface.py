@@ -27,8 +27,7 @@ from tests.mock.interfaces import MockBlockchain
 
 @pytest.fixture(scope='module')
 def mock_testerchain(_mock_testerchain) -> MockBlockchain:
-    testerchain = _mock_testerchain
-    yield testerchain
+    yield _mock_testerchain
 
 
 def test_get_gas_strategy():

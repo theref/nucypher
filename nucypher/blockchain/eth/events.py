@@ -40,8 +40,7 @@ class EventRecord:
         pairs_to_show = dict(self.args.items())
         pairs_to_show['block_number'] = self.block_number
         event_str = ", ".join(f"{k}: {v}" for k, v in pairs_to_show.items())
-        r = f"({self.__class__.__name__}) {event_str}"
-        return r
+        return f"({self.__class__.__name__}) {event_str}"
 
 
 class ContractEvents:
@@ -53,8 +52,7 @@ class ContractEvents:
     def __get_web3_event_by_name(self, event_name: str):
         if event_name not in self.names:
             raise TypeError(f"Event '{event_name}' doesn't exist in this contract. Valid events are {self.names}")
-        event_method = getattr(self.contract.events, event_name)
-        return event_method
+        return getattr(self.contract.events, event_name)
 
     def __getitem__(self, event_name: str):
         event_method = self.__get_web3_event_by_name(event_name)
@@ -108,10 +106,11 @@ class ContractEventsThrottler:
         current_from_block = self.from_block
         current_to_block = min(self.from_block + self.max_blocks_per_call, self.to_block)
         while current_from_block <= current_to_block:
-            for event_record in self.event_filter(from_block=current_from_block,
-                                                  to_block=current_to_block,
-                                                  **self.argument_filters):
-                yield event_record
+            yield from self.event_filter(
+                from_block=current_from_block,
+                to_block=current_to_block,
+                **self.argument_filters
+            )
             # previous block range is inclusive hence the increment
             current_from_block = current_to_block + 1
             # update the 'to block' to the lesser of either the next `max_blocks_per_call` blocks,

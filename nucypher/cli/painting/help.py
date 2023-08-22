@@ -64,7 +64,7 @@ def paint_new_installation_help(emitter, new_configuration, filepath):
         maybe_public_key = new_configuration.keystore.id
     else:
         maybe_public_key = "(no keystore attached)"
-    emitter.message(f"Generated keystore", color='green')
+    emitter.message("Generated keystore", color='green')
     emitter.message(f"""
     
 Public Key:   {maybe_public_key}
@@ -77,9 +77,7 @@ Path to Keystore: {new_configuration.keystore_dir}
 
 """)
 
-    default_config_filepath = True
-    if new_configuration.default_filepath() != filepath:
-        default_config_filepath = False
+    default_config_filepath = new_configuration.default_filepath() == filepath
     emitter.message(f'Generated configuration file at {"default" if default_config_filepath else "non-default"} '
                     f'filepath {filepath}', color='green')
 

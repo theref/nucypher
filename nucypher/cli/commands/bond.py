@@ -63,9 +63,7 @@ def is_authorized(emitter, staking_provider: ChecksumAddress, agent: PREApplicat
 def is_bonded(agent, staking_provider: ChecksumAddress, return_address: bool = False) -> Union[bool, Tuple[bool, ChecksumAddress]]:
     onchain_operator = agent.get_operator_from_staking_provider(staking_provider=staking_provider)
     result = onchain_operator != NULL_ADDRESS
-    if not return_address:
-        return result
-    return result, onchain_operator
+    return result if not return_address else (result, onchain_operator)
 
 
 def check_bonding_requirements(emitter, agent: PREApplicationAgent, staking_provider: ChecksumAddress) -> None:

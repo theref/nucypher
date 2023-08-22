@@ -51,11 +51,10 @@ def _get_websocket_provider(eth_provider_uri) -> BaseProvider:
 
 def _get_auto_provider(eth_provider_uri) -> BaseProvider:
     from web3.auto import w3
-    # how-automated-detection-works: https://web3py.readthedocs.io/en/latest/providers.html
-    connected = w3.isConnected()
-    if not connected:
+    if connected := w3.isConnected():
+        return w3.provider
+    else:
         raise ProviderError('Cannot auto-detect node.  Provide a full URI instead.')
-    return w3.provider
 
 
 def _get_pyevm_test_backend() -> PyEVMBackend:
@@ -74,23 +73,20 @@ def _get_pyevm_test_backend() -> PyEVMBackend:
 
 def _get_ethereum_tester(test_backend: Union[PyEVMBackend, MockBackend]) -> EthereumTesterProvider:
     eth_tester = EthereumTester(backend=test_backend, auto_mine_transactions=True)
-    provider = EthereumTesterProvider(ethereum_tester=eth_tester)
-    return provider
+    return EthereumTesterProvider(ethereum_tester=eth_tester)
 
 
 def _get_pyevm_test_provider(eth_provider_uri) -> BaseProvider:
     """ Test provider entry-point"""
     # https://github.com/ethereum/eth-tester#pyevm-experimental
     pyevm_eth_tester = _get_pyevm_test_backend()
-    provider = _get_ethereum_tester(test_backend=pyevm_eth_tester)
-    return provider
+    return _get_ethereum_tester(test_backend=pyevm_eth_tester)
 
 
 def _get_mock_test_provider(eth_provider_uri) -> BaseProvider:
     # https://github.com/ethereum/eth-tester#mockbackend
     mock_backend = MockBackend()
-    provider = _get_ethereum_tester(test_backend=mock_backend)
-    return provider
+    return _get_ethereum_tester(test_backend=mock_backend)
 
 
 def _get_tester_ganache(eth_provider_uri=None) -> BaseProvider:

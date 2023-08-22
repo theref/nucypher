@@ -28,10 +28,11 @@ def pre_application_deployer(testerchain,
                              test_registry,
                              application_economics,
                              threshold_staking):
-    pre_application_deployer = PREApplicationDeployer(staking_interface=threshold_staking.address,
-                                                      registry=test_registry,
-                                                      economics=application_economics)
-    return pre_application_deployer
+    return PREApplicationDeployer(
+        staking_interface=threshold_staking.address,
+        registry=test_registry,
+        economics=application_economics,
+    )
 
 
 def test_pre_application_deployment(pre_application_deployer,

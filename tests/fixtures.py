@@ -130,8 +130,7 @@ def temp_dir_path():
 
 @pytest.fixture(scope="module")
 def test_datastore():
-    test_datastore = datastore.Datastore(tempfile.mkdtemp())
-    yield test_datastore
+    yield datastore.Datastore(tempfile.mkdtemp())
 
 
 @pytest.fixture(scope='function')
@@ -221,12 +220,13 @@ def idle_federated_policy(federated_alice, federated_bob):
     threshold = MOCK_POLICY_DEFAULT_THRESHOLD
     shares = NUMBER_OF_URSULAS_IN_DEVELOPMENT_NETWORK
     random_label = generate_random_label()
-    policy = federated_alice.create_policy(federated_bob,
-                                           label=random_label,
-                                           threshold=threshold,
-                                           shares=shares,
-                                           expiration=maya.now() + timedelta(days=5))
-    return policy
+    return federated_alice.create_policy(
+        federated_bob,
+        label=random_label,
+        threshold=threshold,
+        shares=shares,
+        expiration=maya.now() + timedelta(days=5),
+    )
 
 
 @pytest.fixture(scope="module")
@@ -234,10 +234,9 @@ def enacted_federated_policy(idle_federated_policy, federated_ursulas):
     # Alice has a policy in mind and knows of enough qualifies Ursulas; she crafts an offer for them.
     network_middleware = MockRestMiddleware()
 
-    # REST call happens here, as does population of TreasureMap.
-    enacted_policy = idle_federated_policy.enact(network_middleware=network_middleware,
-                                                 ursulas=federated_ursulas)
-    return enacted_policy
+    return idle_federated_policy.enact(
+        network_middleware=network_middleware, ursulas=federated_ursulas
+    )
 
 
 @pytest.fixture(scope="module")
@@ -256,13 +255,14 @@ def idle_blockchain_policy(testerchain, blockchain_alice, blockchain_bob, applic
     expiration = maya.now() + timedelta(days=1)
     threshold, shares = 2, 3
     price = blockchain_alice.payment_method.quote(expiration=expiration.epoch, shares=shares).value  # TODO: use default quote option
-    policy = blockchain_alice.create_policy(blockchain_bob,
-                                            label=random_label,
-                                            value=price,
-                                            threshold=threshold,
-                                            shares=shares,
-                                            expiration=expiration)
-    return policy
+    return blockchain_alice.create_policy(
+        blockchain_bob,
+        label=random_label,
+        value=price,
+        threshold=threshold,
+        shares=shares,
+        expiration=expiration,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -275,10 +275,9 @@ def enacted_blockchain_policy(idle_blockchain_policy, blockchain_ursulas):
     # contract_end_datetime = maya.now() + datetime.timedelta(days=5)
     network_middleware = MockRestMiddleware()
 
-    # REST call happens here, as does population of TreasureMap.
-    enacted_policy = idle_blockchain_policy.enact(network_middleware=network_middleware,
-                                                  ursulas=list(blockchain_ursulas))
-    return enacted_policy
+    return idle_blockchain_policy.enact(
+        network_middleware=network_middleware, ursulas=list(blockchain_ursulas)
+    )
 
 
 @pytest.fixture(scope="module")
@@ -298,23 +297,29 @@ def random_blockchain_policy(testerchain, blockchain_alice, blockchain_bob, appl
     expiration = maya.MayaDT(now).add(seconds=seconds)
     shares = 3
     threshold = 2
-    policy = blockchain_alice.create_policy(blockchain_bob,
-                                            label=random_label,
-                                            threshold=threshold,
-                                            shares=shares,
-                                            value=shares * seconds * 100,  # calculation probably needs to incorporate actual cost per second
-                                            expiration=expiration)
-    return policy
+    return blockchain_alice.create_policy(
+        blockchain_bob,
+        label=random_label,
+        threshold=threshold,
+        shares=shares,
+        value=shares
+        * seconds
+        * 100,  # calculation probably needs to incorporate actual cost per second
+        expiration=expiration,
+    )
 
 
 @pytest.fixture(scope="module")
 def capsule_side_channel(enacted_federated_policy):
+
+
+
     class _CapsuleSideChannel:
         def __init__(self):
             self.reset()
 
         def __call__(self):
-            message = "Welcome to flippering number {}.".format(len(self.messages)).encode()
+            message = f"Welcome to flippering number {len(self.messages)}.".encode()
             message_kit = self.enrico.encrypt_message(message)
             self.messages.append((message_kit, self.enrico))
             if self.plaintext_passthrough:
@@ -328,17 +333,21 @@ def capsule_side_channel(enacted_federated_policy):
             self.plaintext_passthrough = plaintext_passthrough
             return self(), self.enrico
 
+
     return _CapsuleSideChannel()
 
 
 @pytest.fixture(scope="module")
 def capsule_side_channel_blockchain(enacted_blockchain_policy):
+
+
+
     class _CapsuleSideChannel:
         def __init__(self):
             self.reset()
 
         def __call__(self):
-            message = "Welcome to flippering number {}.".format(len(self.messages)).encode()
+            message = f"Welcome to flippering number {len(self.messages)}.".encode()
             message_kit = self.enrico.encrypt_message(message)
             self.messages.append((message_kit, self.enrico))
             if self.plaintext_passthrough:
@@ -351,6 +360,7 @@ def capsule_side_channel_blockchain(enacted_blockchain_policy):
             self.plaintexts = []
             self.plaintext_passthrough = plaintext_passthrough
             return self(), self.enrico
+
 
     return _CapsuleSideChannel()
 
@@ -483,14 +493,12 @@ def blockchain_porter(blockchain_ursulas, testerchain, test_registry):
 
 @pytest.fixture(scope='module')
 def application_economics():
-    economics = Economics()
-    return economics
+    return Economics()
 
 
 @pytest.fixture(scope='module')
 def test_registry():
-    registry = InMemoryContractRegistry()
-    return registry
+    return InMemoryContractRegistry()
 
 
 def _make_testerchain(mock_backend: bool = False) -> TesterBlockchain:
@@ -521,8 +529,7 @@ def _make_testerchain(mock_backend: bool = False) -> TesterBlockchain:
 
 @pytest.fixture(scope='session')
 def _testerchain() -> TesterBlockchain:
-    testerchain = _make_testerchain()
-    yield testerchain
+    yield _make_testerchain()
 
 
 @pytest.fixture(scope='module')
@@ -546,7 +553,7 @@ def testerchain(_testerchain) -> TesterBlockchain:
 
             _receipt = testerchain.wait_for_receipt(txhash)
             eth_amount = Web3().fromWei(spent, 'ether')
-            testerchain.log.info("Airdropped {} ETH {} -> {}".format(eth_amount, tx['from'], tx['to']))
+            testerchain.log.info(f"Airdropped {eth_amount} ETH {tx['from']} -> {tx['to']}")
 
     BlockchainInterfaceFactory.register_interface(interface=testerchain, force=True)
     yield testerchain
@@ -554,7 +561,7 @@ def testerchain(_testerchain) -> TesterBlockchain:
 
 @pytest.fixture(scope='module')
 def _mock_testerchain() -> MockBlockchain:
-    BlockchainInterfaceFactory._interfaces = dict()
+    BlockchainInterfaceFactory._interfaces = {}
     testerchain = _make_testerchain(mock_backend=True)
     BlockchainInterfaceFactory.register_interface(interface=testerchain)
     yield testerchain
@@ -622,7 +629,7 @@ def staking_providers(testerchain, agency, test_registry, threshold_staking):
     pre_application_agent = ContractAgency.get_agent(PREApplicationAgent, registry=test_registry)
     blockchain = pre_application_agent.blockchain
 
-    staking_providers = list()
+    staking_providers = []
     for provider_address, operator_address in zip(blockchain.stake_providers_accounts, blockchain.ursulas_accounts):
         provider_power = TransactingPower(account=provider_address, signer=Web3Signer(testerchain.client))
         provider_power.unlock(password=INSECURE_DEVELOPMENT_PASSWORD)
@@ -694,14 +701,12 @@ def blockchain_ursulas(testerchain, staking_providers, ursula_decentralized_test
 
 @pytest.fixture(scope='module')
 def policy_rate():
-    rate = Web3.toWei(21, 'gwei')
-    return rate
+    return Web3.toWei(21, 'gwei')
 
 
 @pytest.fixture(scope='module')
 def policy_value(application_economics, policy_rate):
-    value = policy_rate * application_economics.min_operator_seconds
-    return value
+    return policy_rate * application_economics.min_operator_seconds
 
 
 @pytest.fixture(scope='module')
@@ -770,22 +775,22 @@ def software_stakeholder(testerchain, agency, stakeholder_config_file_location, 
     # Create stakeholder from on-chain values given accounts over a web3 provider
     signer = Web3Signer(testerchain.client)
     signer.unlock_account(account=address, password=INSECURE_DEVELOPMENT_PASSWORD)
-    stakeholder = StakeHolder(registry=test_registry,
-                              domain=TEMPORARY_DOMAIN,
-                              signer=signer,
-                              initial_address=address)
-
-    # Teardown
-    yield stakeholder
+    yield StakeHolder(
+        registry=test_registry,
+        domain=TEMPORARY_DOMAIN,
+        signer=signer,
+        initial_address=address,
+    )
     if path.exists():
         path.unlink()
 
 
 @pytest.fixture(scope="module")
 def stakeholder_configuration(testerchain, agency_local_registry):
-    config = StakeHolderConfiguration(eth_provider_uri=testerchain.eth_provider_uri,
-                                      registry_filepath=agency_local_registry.filepath)
-    return config
+    return StakeHolderConfiguration(
+        eth_provider_uri=testerchain.eth_provider_uri,
+        registry_filepath=agency_local_registry.filepath,
+    )
 
 
 @pytest.fixture(scope='module')
@@ -932,8 +937,7 @@ def test_emitter(mocker):
 
 @pytest.fixture(scope='module')
 def click_runner():
-    runner = CliRunner()
-    yield runner
+    yield CliRunner()
 
 
 @pytest.fixture(scope='session')
@@ -949,7 +953,7 @@ def nominal_federated_configuration_fields():
 def mock_allocation_infile(testerchain, application_economics, get_random_checksum_address):
     accounts = [get_random_checksum_address() for _ in range(10)]
     # accounts = testerchain.unassigned_accounts
-    allocation_data = list()
+    allocation_data = []
     amount = 2 * application_economics.min_authorization
     min_periods = application_economics.min_operator_seconds
     for account in accounts:
@@ -999,19 +1003,20 @@ def custom_filepath_2():
 
 @pytest.fixture(scope='module')
 def worker_configuration_file_location(custom_filepath) -> Path:
-    _configuration_file_location = MOCK_CUSTOM_INSTALLATION_PATH / UrsulaConfiguration.generate_filename()
-    return _configuration_file_location
+    return MOCK_CUSTOM_INSTALLATION_PATH / UrsulaConfiguration.generate_filename()
 
 
 @pytest.fixture(scope='module')
 def stakeholder_configuration_file_location(custom_filepath) -> Path:
-    _configuration_file_location = MOCK_CUSTOM_INSTALLATION_PATH / StakeHolderConfiguration.generate_filename()
-    return _configuration_file_location
+    return (
+        MOCK_CUSTOM_INSTALLATION_PATH
+        / StakeHolderConfiguration.generate_filename()
+    )
 
 
 @pytest.fixture(autouse=True)
 def mock_teacher_nodes(mocker):
-    mock_nodes = tuple(u.rest_url() for u in MOCK_KNOWN_URSULAS_CACHE.values())[0:2]
+    mock_nodes = tuple(u.rest_url() for u in MOCK_KNOWN_URSULAS_CACHE.values())[:2]
     mocker.patch.dict(TEACHER_NODES, {TEMPORARY_DOMAIN: mock_nodes}, clear=True)
 
 

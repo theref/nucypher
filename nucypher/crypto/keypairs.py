@@ -136,9 +136,8 @@ class SigningKeypair(Keypair):
     def get_signature_stamp(self):
         if self._privkey is constants.PUBLIC_ONLY:
             return StrangerStamp(verifying_key=self.pubkey)
-        else:
-            signer = Signer(self._privkey)
-            return SignatureStamp(verifying_key=self.pubkey, signer=signer)
+        signer = Signer(self._privkey)
+        return SignatureStamp(verifying_key=self.pubkey, signer=signer)
 
 
 class HostingKeypair(Keypair):

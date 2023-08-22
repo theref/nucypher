@@ -60,10 +60,11 @@ def test_availability_tracker_success(blockchain_ursulas):
         assert not tracker.status()
 
         original_issuer = AvailabilityTracker.issue_warnings
-        warnings = dict()
+        warnings = {}
         def issue_warnings(tracker, *args, **kwargs):
             result = original_issuer(tracker, *args, **kwargs)
             warnings[tracker.score] = result
+
         AvailabilityTracker.issue_warnings = issue_warnings
         tracker.maintain()
         assert warnings
@@ -78,17 +79,16 @@ def test_availability_tracker_success(blockchain_ursulas):
         for i in range(150):
             tracker.record(True)
         assert tracker.score > 9.98
-        assert tracker.status() == bool(tracker.score > (tracker.SENSITIVITY * tracker.MAXIMUM_SCORE))
+        assert tracker.status() == (
+            tracker.score > tracker.SENSITIVITY * tracker.MAXIMUM_SCORE
+        )
         assert tracker.status()
 
     # Run the Callbacks
     try:
-        d = threads.deferToThread(measure)
-        yield d
-        d = threads.deferToThread(maintain)
-        yield d
-        d = threads.deferToThread(raise_to_maximum)
-        yield d
+        yield threads.deferToThread(measure)
+        yield threads.deferToThread(maintain)
+        yield threads.deferToThread(raise_to_maximum)
     finally:
         if ursula._availability_tracker:
             ursula._availability_tracker.stop()
@@ -112,9 +112,8 @@ def test_availability_tracker_integration(blockchain_ursulas, monkeypatch):
             ursula_were_looking_for = ursula.rest_interface.port == port
             if ursula_were_looking_for:
                 raise RestMiddleware.NotFound("Fake Reason")  # Make this node unreachable
-            else:
-                response = Response(response=bytes(ursula.metadata()), mimetype='application/octet-stream')
-                return response
+            response = Response(response=bytes(ursula.metadata()), mimetype='application/octet-stream')
+            return response
 
         # apply the monkeypatch for requests.get to mock_get
         monkeypatch.setattr(NucypherMiddlewareClient,
@@ -139,8 +138,7 @@ def test_availability_tracker_integration(blockchain_ursulas, monkeypatch):
 
     # Run the Callbacks
     try:
-        d = threads.deferToThread(maintain)
-        yield d
+        yield threads.deferToThread(maintain)
     finally:
         if ursula._availability_tracker:
             ursula._availability_tracker.stop()

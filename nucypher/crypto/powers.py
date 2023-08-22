@@ -141,8 +141,7 @@ class TransactingPower(CryptoPowerUp):
     def __eq__(self, other):
         if not isinstance(other, TransactingPower):
             return False
-        result = bool(self.account == other.account)
-        return result
+        return self.account == other.account
 
     #
     # Properties
@@ -172,10 +171,9 @@ class TransactingPower(CryptoPowerUp):
     def unlock(self, password: str = None, duration: int = None) -> bool:
         """Unlocks the account with provided or cached password."""
         password = password or self.__password
-        result = self._signer.unlock_account(self.__account,
-                                             password=password,
-                                             duration=duration)
-        return result
+        return self._signer.unlock_account(
+            self.__account, password=password, duration=duration
+        )
 
     def sign_message(self, message: bytes) -> bytes:
         """Signs the message with the private key of the TransactingPower."""
@@ -200,32 +198,28 @@ class KeyPairBasedPower(CryptoPowerUp):
             raise ValueError("Pass keypair or pubkey_bytes (or neither), but not both.")
         elif keypair:
             self.keypair = keypair
-        else:
-            # They didn't pass a keypair; we'll make one with the bytes or
-            # Umbral PublicKey if they provided such a thing.
-            if public_key:
+        elif public_key:
+            try:
+                public_key = public_key.as_umbral_pubkey()
+            except AttributeError:
                 try:
-                    public_key = public_key.as_umbral_pubkey()
-                except AttributeError:
-                    try:
-                        public_key = PublicKey.from_bytes(public_key)
-                    except TypeError:
-                        public_key = public_key
-                self.keypair = self._keypair_class(
-                    public_key=public_key)
-            else:
-                # They didn't even pass a public key.  We have no choice but to generate a keypair.
-                self.keypair = self._keypair_class(generate_keys_if_needed=True)
+                    public_key = PublicKey.from_bytes(public_key)
+                except TypeError:
+                    public_key = public_key
+            self.keypair = self._keypair_class(
+                public_key=public_key)
+        else:
+            # They didn't even pass a public key.  We have no choice but to generate a keypair.
+            self.keypair = self._keypair_class(generate_keys_if_needed=True)
 
     def __getattr__(self, item):
-        if item in self.provides:
-            try:
-                return getattr(self.keypair, item)
-            except AttributeError:
-                message = f"This {self.__class__} has a keypair, {self.keypair.__class__}, which doesn't provide {item}."
-                raise PowerUpError(message)
-        else:
-            raise PowerUpError("This {} doesn't provide {}.".format(self.__class__, item))
+        if item not in self.provides:
+            raise PowerUpError(f"This {self.__class__} doesn't provide {item}.")
+        try:
+            return getattr(self.keypair, item)
+        except AttributeError:
+            message = f"This {self.__class__} has a keypair, {self.keypair.__class__}, which doesn't provide {item}."
+            raise PowerUpError(message)
 
     def public_key(self) -> 'PublicKey':
         return self.keypair.pubkey
@@ -294,8 +288,7 @@ class DelegatingPower(DerivedKeyBasedPower):
     def get_decrypting_power_from_label(self, label):
         label_privkey = self._get_privkey_from_label(label)
         label_keypair = keypairs.DecryptingKeypair(private_key=label_privkey)
-        decrypting_power = DecryptingPower(keypair=label_keypair)
-        return decrypting_power
+        return DecryptingPower(keypair=label_keypair)
 
 
 class TLSHostingPower(KeyPairBasedPower):

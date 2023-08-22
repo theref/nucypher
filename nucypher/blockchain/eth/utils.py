@@ -30,8 +30,7 @@ from nucypher.blockchain.eth.constants import AVERAGE_BLOCK_TIME_IN_SECONDS
 
 
 def epoch_to_period(epoch: int, seconds_per_period: int) -> int:
-    period = epoch // seconds_per_period
-    return period
+    return epoch // seconds_per_period
 
 
 def datetime_to_period(datetime: maya.MayaDT, seconds_per_period: int) -> int:
@@ -41,14 +40,12 @@ def datetime_to_period(datetime: maya.MayaDT, seconds_per_period: int) -> int:
 
 
 def period_to_epoch(period: int, seconds_per_period: int) -> int:
-    epoch = period * seconds_per_period
-    return epoch
+    return period * seconds_per_period
 
 
 def get_current_period(seconds_per_period: int) -> int:
     now = maya.now().epoch
-    period = epoch_to_period(epoch=now, seconds_per_period=seconds_per_period)
-    return period
+    return epoch_to_period(epoch=now, seconds_per_period=seconds_per_period)
 
 
 def datetime_at_period(period: int, seconds_per_period: int, start_of_period: bool = False) -> maya.MayaDT:
@@ -57,14 +54,11 @@ def datetime_at_period(period: int, seconds_per_period: int, start_of_period: bo
     If start_of_period, the datetime object represents the first second of said period.
     """
     if start_of_period:
-        datetime_at_start_of_period = maya.MayaDT(epoch=period_to_epoch(period, seconds_per_period))
-        return datetime_at_start_of_period
-    else:
-        now = maya.now()
-        current_period = datetime_to_period(datetime=now, seconds_per_period=seconds_per_period)
-        delta_periods = period - current_period
-        target_datetime = now + maya.timedelta(seconds=seconds_per_period) * delta_periods
-        return target_datetime
+        return maya.MayaDT(epoch=period_to_epoch(period, seconds_per_period))
+    now = maya.now()
+    current_period = datetime_to_period(datetime=now, seconds_per_period=seconds_per_period)
+    delta_periods = period - current_period
+    return now + maya.timedelta(seconds=seconds_per_period) * delta_periods
 
 
 def calculate_period_duration(future_time: maya.MayaDT, seconds_per_period: int, now: maya.MayaDT = None) -> int:
@@ -73,8 +67,7 @@ def calculate_period_duration(future_time: maya.MayaDT, seconds_per_period: int,
         now = maya.now()
     future_period = datetime_to_period(datetime=future_time, seconds_per_period=seconds_per_period)
     current_period = datetime_to_period(datetime=now, seconds_per_period=seconds_per_period)
-    periods = future_period - current_period
-    return periods
+    return future_period - current_period
 
 
 def estimate_block_number_for_period(period: int, seconds_per_period: int,  latest_block: BlockNumber) -> BlockNumber:
@@ -85,8 +78,7 @@ def estimate_block_number_for_period(period: int, seconds_per_period: int,  late
     seconds_from_midnight = int((maya.now() - period_start).total_seconds())
     blocks_from_midnight = seconds_from_midnight // AVERAGE_BLOCK_TIME_IN_SECONDS
 
-    block_number_for_period = latest_block - blocks_from_midnight
-    return block_number_for_period
+    return latest_block - blocks_from_midnight
 
 
 def etherscan_url(item, network: str, is_token=False) -> str:
@@ -114,8 +106,7 @@ def etherscan_url(item, network: str, is_token=False) -> str:
     else:
         raise ValueError(f"Cannot construct etherscan URL for {item}")
 
-    url = f"{domain}/{item_type}/{item}"
-    return url
+    return f"{domain}/{item_type}/{item}"
 
 
 def prettify_eth_amount(amount, original_denomination: str = 'wei') -> str:
@@ -139,7 +130,7 @@ def prettify_eth_amount(amount, original_denomination: str = 'wei') -> str:
 
         if denomination == 'ether':
             denomination = 'ETH'
-        pretty_amount += " " + denomination
+        pretty_amount += f" {denomination}"
 
     except Exception:  # Worst case scenario, we just print the str representation of amount
         pretty_amount = str(amount)

@@ -83,7 +83,7 @@ def test_sampling_distribution(testerchain, test_registry, threshold_staking, ap
             continue
         else:
             sampled += 1
-            counter.update(addresses)
+            counter |= addresses
 
     total_times = sum(counter.values())
 
@@ -121,13 +121,13 @@ def test_weighted_sampler(sample_size):
 
     counter = Counter()
 
-    weighted_elements = {element: weight for element, weight in zip(elements, weights)}
+    weighted_elements = dict(zip(elements, weights))
 
     samples = 100000
-    for i in range(samples):
+    for _ in range(samples):
         sampler = WeightedSampler(weighted_elements)
         sample_set = sampler.sample_no_replacement(rng, sample_size)
-        counter.update({tuple(sample_set): 1})
+        counter[tuple(sample_set)] = 1
 
     for idxs in permutations(elements, sample_size):
         test_prob = counter[idxs] / samples

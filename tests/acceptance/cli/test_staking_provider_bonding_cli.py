@@ -57,11 +57,14 @@ def exec_bond(click_runner, operator_address: ChecksumAddress, staking_provider_
                '--network', TEMPORARY_DOMAIN,
                '--signer', TEST_ETH_PROVIDER_URI,
                '--force')
-    result = click_runner.invoke(bond,
-                                 command,
-                                 catch_exceptions=False,
-                                 env=dict(NUCYPHER_STAKING_PROVIDER_ETH_PASSWORD=INSECURE_DEVELOPMENT_PASSWORD))
-    return result
+    return click_runner.invoke(
+        bond,
+        command,
+        catch_exceptions=False,
+        env=dict(
+            NUCYPHER_STAKING_PROVIDER_ETH_PASSWORD=INSECURE_DEVELOPMENT_PASSWORD
+        ),
+    )
 
 
 def exec_unbond(click_runner, staking_provider_address: ChecksumAddress):
@@ -70,11 +73,14 @@ def exec_unbond(click_runner, staking_provider_address: ChecksumAddress):
                '--network', TEMPORARY_DOMAIN,
                '--signer', TEST_ETH_PROVIDER_URI,
                '--force')
-    result = click_runner.invoke(unbond,
-                                 command,
-                                 catch_exceptions=False,
-                                 env=dict(NUCYPHER_STAKING_PROVIDER_ETH_PASSWORD=INSECURE_DEVELOPMENT_PASSWORD))
-    return result
+    return click_runner.invoke(
+        unbond,
+        command,
+        catch_exceptions=False,
+        env=dict(
+            NUCYPHER_STAKING_PROVIDER_ETH_PASSWORD=INSECURE_DEVELOPMENT_PASSWORD
+        ),
+    )
 
 
 @pytest.mark.usefixtures('test_registry_source_manager', 'agency')

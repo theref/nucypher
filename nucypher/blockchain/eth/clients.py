@@ -202,8 +202,7 @@ class EthereumClient:
             'platform': client_data[2] if len(client_data) == 4 else None  # Platform is optional
         }
 
-        instance = ClientSubclass._get_variant(w3)(w3, **client_kwargs)
-        return instance
+        return ClientSubclass._get_variant(w3)(w3, **client_kwargs)
 
     @property
     def peers(self):
@@ -212,18 +211,13 @@ class EthereumClient:
     @property
     def chain_name(self) -> str:
         chain_inventory = LOCAL_CHAINS if self.is_local else PUBLIC_CHAINS
-        name = chain_inventory.get(self.chain_id, UNKNOWN_DEVELOPMENT_CHAIN_ID)
-        return name
+        return chain_inventory.get(self.chain_id, UNKNOWN_DEVELOPMENT_CHAIN_ID)
 
     def lock_account(self, account) -> bool:
-        if self.is_local:
-            return True
-        return NotImplemented
+        return True if self.is_local else NotImplemented
 
     def unlock_account(self, account, password, duration=None) -> bool:
-        if self.is_local:
-            return True
-        return NotImplemented
+        return True if self.is_local else NotImplemented
 
     @property
     def is_connected(self):
@@ -342,8 +336,7 @@ class EthereumClient:
 
     @staticmethod
     def _calculate_confirmations_timeout(confirmations):
-        confirmations_timeout = 3 * AVERAGE_BLOCK_TIME_IN_SECONDS * confirmations
-        return confirmations_timeout
+        return 3 * AVERAGE_BLOCK_TIME_IN_SECONDS * confirmations
 
     def check_transaction_is_on_chain(self, receipt: TxReceipt) -> bool:
         transaction_hash = Web3.toHex(receipt['transactionHash'])
@@ -390,8 +383,7 @@ class EthereumClient:
 
     def get_blocktime(self):
         highest_block = self.w3.eth.getBlock('latest')
-        now = highest_block['timestamp']
-        return now
+        return highest_block['timestamp']
 
     def get_block(self, block_identifier):
         return self.w3.eth.getBlock(block_identifier)
@@ -435,9 +427,9 @@ class GethClient(EthereumClient):
         debug_message = f"Unlocking account {account}"
 
         if duration is None:
-            debug_message += f" for 5 minutes"
+            debug_message += " for 5 minutes"
         elif duration == 0:
-            debug_message += f" indefinitely"
+            debug_message += " indefinitely"
         elif duration > 0:
             debug_message += f" for {duration} seconds"
 
@@ -459,9 +451,7 @@ class GethClient(EthereumClient):
         # Sign
         result = self.w3.eth.signTransaction(transaction_dict)
 
-        # Return RLP bytes
-        rlp_encoded_transaction = result.raw
-        return rlp_encoded_transaction
+        return result.raw
 
     @property
     def wallets(self):
@@ -544,9 +534,9 @@ class EthereumTesterClient(EthereumClient):
             return self.w3.provider.ethereum_tester.lock_account(account=account)
 
     def new_account(self, password: str) -> str:
-        insecure_account = self.w3.provider.ethereum_tester.add_account(private_key=os.urandom(32).hex(),
-                                                                        password=password)
-        return insecure_account
+        return self.w3.provider.ethereum_tester.add_account(
+            private_key=os.urandom(32).hex(), password=password
+        )
 
     def __get_signing_key(self, account: bytes):
         """Get signing key of test account"""
@@ -562,8 +552,7 @@ class EthereumTesterClient(EthereumClient):
         address = to_canonical_address(transaction_dict['from'])
         signing_key = self.__get_signing_key(account=address)
         signed_transaction = self.w3.eth.account.sign_transaction(transaction_dict, private_key=signing_key)
-        rlp_transaction = signed_transaction.rawTransaction
-        return rlp_transaction
+        return signed_transaction.rawTransaction
 
     def sign_message(self, account: str, message: bytes) -> str:
         """Sign, EIP-191 (Geth) Style"""

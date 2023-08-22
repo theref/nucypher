@@ -140,14 +140,14 @@ class BaseContractDeployer:
         if additional_rules:
             rules.extend(additional_rules)
 
-        disqualifications = list()
+        disqualifications = []
         for rule_is_satisfied, failure_reason in rules:
             if not rule_is_satisfied:                      # If this rule fails...
                 if fail:
                     raise self.ContractDeploymentError(failure_reason)
                 disqualifications.append(failure_reason)   # ... here's why
 
-        is_ready = len(disqualifications) == 0
+        is_ready = not disqualifications
         return is_ready, disqualifications
 
     def deploy(self,
@@ -164,28 +164,33 @@ class BaseContractDeployer:
         raise NotImplementedError
 
     def make_agent(self) -> EthereumContractAgent:
-        agent = self.agency(registry=self.registry, contract=self._contract)
-        return agent
+        return self.agency(registry=self.registry, contract=self._contract)
 
     def get_latest_enrollment(self) -> VersionedContract:
         """Get the latest enrolled, bare version of the contract from the registry."""
-        contract = self.blockchain.get_contract_by_name(contract_name=self.contract_name,
-                                                        registry=self.registry,
-                                                        use_proxy_address=False,
-                                                        enrollment_version='latest')
-        return contract
+        return self.blockchain.get_contract_by_name(
+            contract_name=self.contract_name,
+            registry=self.registry,
+            use_proxy_address=False,
+            enrollment_version='latest',
+        )
 
     def _get_deployed_contract(self):
-        if self.contract is None or self.contract is CONTRACT_NOT_DEPLOYED:
-            proxy_name = None
-            if self._proxy_deployer is not NotImplemented:
-                proxy_name = self._proxy_deployer.contract_name
-            deployed_contract = self.blockchain.get_contract_by_name(contract_name=self.contract_name,
-                                                                     registry=self.registry,
-                                                                     proxy_name=proxy_name)
-        else:
-            deployed_contract = self.contract
-        return deployed_contract
+        if (
+            self.contract is not None
+            and self.contract is not CONTRACT_NOT_DEPLOYED
+        ):
+            return self.contract
+        proxy_name = (
+            self._proxy_deployer.contract_name
+            if self._proxy_deployer is not NotImplemented
+            else None
+        )
+        return self.blockchain.get_contract_by_name(
+            contract_name=self.contract_name,
+            registry=self.registry,
+            proxy_name=proxy_name,
+        )
 
 
 class OwnableContractMixin:
@@ -203,8 +208,7 @@ class OwnableContractMixin:
         else:
             # Get the address of the implementation
             contract = self.blockchain.get_contract_by_name(contract_name=self.contract_name, registry=self.registry)
-        owner_address = ChecksumAddress(contract.contract.functions.owner().call())  # blockchain read
-        return owner_address
+        return ChecksumAddress(contract.contract.functions.owner().call())
 
     def transfer_ownership(self,
                            transacting_power: TransactingPower,
@@ -221,9 +225,11 @@ class OwnableContractMixin:
             #
             proxy_deployer = self.get_proxy_deployer()
             proxy_contract_function = proxy_deployer.contract.functions.transferOwnership(new_owner)
-            receipt = self.blockchain.send_transaction(transacting_power=transacting_power,
-                                                       contract_function=proxy_contract_function,
-                                                       transaction_gas_limit=transaction_gas_limit)
+            return self.blockchain.send_transaction(
+                transacting_power=transacting_power,
+                contract_function=proxy_contract_function,
+                transaction_gas_limit=transaction_gas_limit,
+            )
         else:
             existing_bare_contract = self.blockchain.get_contract_by_name(contract_name=self.contract_name,
                                                                           registry=self.registry)
@@ -233,10 +239,11 @@ class OwnableContractMixin:
             #
 
             contract_function = existing_bare_contract.functions.transferOwnership(new_owner)
-            receipt = self.blockchain.send_transaction(transacting_power=transacting_power,
-                                                       contract_function=contract_function,
-                                                       transaction_gas_limit=transaction_gas_limit)
-        return receipt
+            return self.blockchain.send_transaction(
+                transacting_power=transacting_power,
+                contract_function=contract_function,
+                transaction_gas_limit=transaction_gas_limit,
+            )
 
 
 class UpgradeableContractMixin:
@@ -268,27 +275,28 @@ class UpgradeableContractMixin:
         """
         if not self._upgradeable:
             raise self.ContractNotUpgradeable(f"{self.contract_name} is not upgradeable.")
-        principal_contract = self.blockchain.get_contract_by_name(contract_name=self.contract_name,
-                                                                  registry=self.registry,
-                                                                  proxy_name=self._proxy_deployer.contract_name,
-                                                                  use_proxy_address=False)
-        return principal_contract
+        return self.blockchain.get_contract_by_name(
+            contract_name=self.contract_name,
+            registry=self.registry,
+            proxy_name=self._proxy_deployer.contract_name,
+            use_proxy_address=False,
+        )
 
     def get_proxy_contract(self) -> VersionedContract:  # TODO: Method seems unused and untested
         if not self._upgradeable:
             raise self.ContractNotUpgradeable(f"{self.contract_name} is not upgradeable.")
         principal_contract = self.get_principal_contract()
-        proxy_contract = self.blockchain.get_proxy_contract(registry=self.registry,
-                                                            target_address=principal_contract.address,
-                                                            proxy_name=self._proxy_deployer.contract_name)
-        return proxy_contract
+        return self.blockchain.get_proxy_contract(
+            registry=self.registry,
+            target_address=principal_contract.address,
+            proxy_name=self._proxy_deployer.contract_name,
+        )
 
     def get_proxy_deployer(self) -> BaseContractDeployer:
         principal_contract = self.get_principal_contract()
-        proxy_deployer = self._proxy_deployer(registry=self.registry,
-                                              target_contract=principal_contract,
-                                              bare=True)  # acquire access to the proxy itself.
-        return proxy_deployer
+        return self._proxy_deployer(
+            registry=self.registry, target_contract=principal_contract, bare=True
+        )
 
     def retarget(self,
                  transacting_power: TransactingPower,
@@ -309,16 +317,18 @@ class UpgradeableContractMixin:
 
         # 2 - Retarget (or build retarget transaction)
         if just_build_transaction:
-            transaction = proxy_deployer.build_retarget_transaction(sender_address=transacting_power.account,
-                                                                    new_target=target_address,
-                                                                    gas_limit=gas_limit)
-            return transaction
+            return proxy_deployer.build_retarget_transaction(
+                sender_address=transacting_power.account,
+                new_target=target_address,
+                gas_limit=gas_limit,
+            )
         else:
-            receipt = proxy_deployer.retarget(transacting_power=transacting_power,
-                                              new_target=target_address,
-                                              gas_limit=gas_limit,
-                                              confirmations=confirmations)
-            return receipt
+            return proxy_deployer.retarget(
+                transacting_power=transacting_power,
+                new_target=target_address,
+                gas_limit=gas_limit,
+                confirmations=confirmations,
+            )
 
     def upgrade(self,
                 transacting_power: TransactingPower,
@@ -373,9 +383,9 @@ class UpgradeableContractMixin:
             raise self.ContractNotUpgradeable(f"{self.contract_name} is not upgradeable.")
 
         proxy_deployer = self.get_proxy_deployer()
-        rollback_receipt = proxy_deployer.rollback(transacting_power=transacting_power, gas_limit=gas_limit)
-
-        return rollback_receipt
+        return proxy_deployer.rollback(
+            transacting_power=transacting_power, gas_limit=gas_limit
+        )
 
     def _finish_bare_deployment(self, deployment_receipt: dict, progress=None) -> dict:
         """Used to divert flow control for bare contract deployments."""
@@ -417,13 +427,11 @@ class NucypherTokenDeployer(BaseContractDeployer):
 
         self.check_deployment_readiness(deployer_address=transacting_power.account,
                                         ignore_deployed=ignore_deployed)
-        
+
         if emitter:
             emitter.message("\nNext Transaction: Token Contract Creation", color='blue', bold=True)
 
-        # WARNING: Order-sensitive!
-        constructor_kwargs = {"_totalSupplyOfTokens": self.TOTAL_SUPPLY}
-        constructor_kwargs.update(overrides)
+        constructor_kwargs = {"_totalSupplyOfTokens": self.TOTAL_SUPPLY} | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         contract, deployment_receipt = self.blockchain.deploy_contract(transacting_power,
                                                                        self.registry,
@@ -486,19 +494,21 @@ class ProxyContractDeployer(BaseContractDeployer):
                  ) -> dict:
         self._validate_retarget(new_target)
         upgrade_function = self._contract.functions.upgrade(new_target)
-        upgrade_receipt = self.blockchain.send_transaction(contract_function=upgrade_function,
-                                                           transacting_power=transacting_power,
-                                                           transaction_gas_limit=gas_limit,
-                                                           confirmations=confirmations)
-        return upgrade_receipt
+        return self.blockchain.send_transaction(
+            contract_function=upgrade_function,
+            transacting_power=transacting_power,
+            transaction_gas_limit=gas_limit,
+            confirmations=confirmations,
+        )
 
     def build_retarget_transaction(self, sender_address: ChecksumAddress, new_target: str, gas_limit: int = None) -> dict:
         self._validate_retarget(new_target)
         upgrade_function = self._contract.functions.upgrade(new_target)
-        unsigned_transaction = self.blockchain.build_contract_transaction(sender_address=sender_address,
-                                                                          contract_function=upgrade_function,
-                                                                          transaction_gas_limit=gas_limit)
-        return unsigned_transaction
+        return self.blockchain.build_contract_transaction(
+            sender_address=sender_address,
+            contract_function=upgrade_function,
+            transaction_gas_limit=gas_limit,
+        )
 
     def rollback(self,
                  transacting_power: TransactingPower,
@@ -506,13 +516,14 @@ class ProxyContractDeployer(BaseContractDeployer):
                  ) -> dict:
         origin_args = {}  # TODO: Gas management - #842
         if gas_limit:
-            origin_args.update({'gas': gas_limit})
+            origin_args['gas'] = gas_limit
 
         rollback_function = self._contract.functions.rollback()
-        rollback_receipt = self.blockchain.send_transaction(contract_function=rollback_function,
-                                                            transacting_power=transacting_power,
-                                                            payload=origin_args)
-        return rollback_receipt
+        return self.blockchain.send_transaction(
+            contract_function=rollback_function,
+            transacting_power=transacting_power,
+            payload=origin_args,
+        )
 
 
 class DispatcherDeployer(OwnableContractMixin, ProxyContractDeployer):
@@ -562,12 +573,11 @@ class StakingEscrowDeployer(BaseContractDeployer, UpgradeableContractMixin, Owna
                      **overrides):
         constructor_kwargs = {
             "_minAllowableLockedTokens": self.STUB_MIN_ALLOWED_TOKENS,
-            "_maxAllowableLockedTokens": self.STUB_MAX_ALLOWED_TOKENS
-        }
-        constructor_kwargs.update(overrides)
+            "_maxAllowableLockedTokens": self.STUB_MAX_ALLOWED_TOKENS,
+        } | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         # Force use of the token address from the registry
-        constructor_kwargs.update({"_token": self.token_contract.address})
+        constructor_kwargs["_token"] = self.token_contract.address
         the_escrow_contract, deploy_receipt = self.blockchain.deploy_contract(
             transacting_power,
             self.registry,
@@ -585,11 +595,13 @@ class StakingEscrowDeployer(BaseContractDeployer, UpgradeableContractMixin, Owna
                           gas_limit: int = None,
                           confirmations: int = 0,
                           **overrides):
-        constructor_kwargs = {}
-        constructor_kwargs.update({"_token": self.token_contract.address,
-                                   "_workLock": self.worklock_address if self.worklock_address is not None else NULL_ADDRESS,
-                                   "_tStaking": self.threshold_staking_address})
-        constructor_kwargs.update(overrides)
+        constructor_kwargs = {
+            "_token": self.token_contract.address,
+            "_workLock": self.worklock_address
+            if self.worklock_address is not None
+            else NULL_ADDRESS,
+            "_tStaking": self.threshold_staking_address,
+        } | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         the_escrow_contract, deploy_receipt = self.blockchain.deploy_contract(
             transacting_power,
@@ -635,11 +647,9 @@ class StakingEscrowDeployer(BaseContractDeployer, UpgradeableContractMixin, Owna
                                         contract_version=contract_version,
                                         ignore_deployed=ignore_deployed)
 
-        # Build deployment arguments
-        origin_args = {}
         if gas_limit:
-            origin_args.update({'gas': gas_limit})  # TODO: Gas Management - #842
-
+                # Build deployment arguments
+            origin_args = {'gas': gas_limit}
         if emitter:
             contract_name = self.contract_name_stub if deployment_mode is INIT else self.contract_name
             emitter.message(f"\nNext Transaction: {contract_name} Contract Creation", color='blue', bold=True)
@@ -661,9 +671,9 @@ class StakingEscrowDeployer(BaseContractDeployer, UpgradeableContractMixin, Owna
             # This is the end of bare deployment.
             if deployment_mode is BARE:
                 self._contract = the_escrow_contract
-                receipts = self._finish_bare_deployment(deployment_receipt=deploy_receipt, progress=progress)
-                return receipts
-
+                return self._finish_bare_deployment(
+                    deployment_receipt=deploy_receipt, progress=progress
+                )
         if progress:
             progress.update(1)
 
@@ -734,8 +744,7 @@ class SubscriptionManagerDeployer(BaseContractDeployer, OwnableContractMixin):
                deployment_mode=FULL,
                **overrides) -> dict:
 
-        constructor_kwargs = {}  # placeholder for constructor kwargs
-        constructor_kwargs.update(overrides)
+        constructor_kwargs = {} | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         contract, deployment_receipt = self.blockchain.deploy_contract(transacting_power,
                                                                        self.registry,
@@ -748,7 +757,7 @@ class SubscriptionManagerDeployer(BaseContractDeployer, OwnableContractMixin):
 
         tx_args = {}
         if gas_limit:
-            tx_args.update({'gas': gas_limit})  # TODO: Gas management - 842
+            tx_args['gas'] = gas_limit
         initialize_function = contract.functions.initialize(self.economics.fee_rate)
         initialize_receipt = self.blockchain.send_transaction(contract_function=initialize_function,
                                                               transacting_power=transacting_power,
@@ -801,12 +810,11 @@ class AdjudicatorDeployer(BaseContractDeployer, UpgradeableContractMixin, Ownabl
             "_basePenalty": args[1],
             "_penaltyHistoryCoefficient": args[2],
             "_percentagePenaltyCoefficient": args[3],
-            "_rewardCoefficient": args[4]
-        }
-        constructor_kwargs.update(overrides)
+            "_rewardCoefficient": args[4],
+        } | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         # Force use of the escrow address from the registry
-        constructor_kwargs.update({"_escrow": self.staking_contract.address})
+        constructor_kwargs["_escrow"] = self.staking_contract.address
         adjudicator_contract, deploy_receipt = self.blockchain.deploy_contract(transacting_power,
                                                                                self.registry,
                                                                                self.contract_name,
@@ -900,11 +908,11 @@ class PREApplicationDeployer(BaseContractDeployer):
                           gas_limit: int = None,
                           confirmations: int = 0,
                           **overrides):
-        constructor_kwargs = {}
-        constructor_kwargs.update({"_minAuthorization": self.economics.min_authorization,
-                                   "_minOperatorSeconds": self.economics.min_operator_seconds,
-                                   "_tStaking": self.threshold_staking_interface})
-        constructor_kwargs.update(overrides)
+        constructor_kwargs = {
+            "_minAuthorization": self.economics.min_authorization,
+            "_minOperatorSeconds": self.economics.min_operator_seconds,
+            "_tStaking": self.threshold_staking_interface,
+        } | overrides
         constructor_kwargs = {k: v for k, v in constructor_kwargs.items() if v is not None}
         the_escrow_contract, deploy_receipt = self.blockchain.deploy_contract(
             transacting_power,

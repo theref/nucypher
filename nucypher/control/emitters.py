@@ -140,19 +140,15 @@ class JSONRPCStdoutEmitter(StdoutEmitter):
 
     @staticmethod
     def assemble_response(response: dict, message_id: int) -> dict:
-        response_data = {'jsonrpc': '2.0',
-                         'id': str(message_id),
-                         'result': response}
-        return response_data
+        return {'jsonrpc': '2.0', 'id': str(message_id), 'result': response}
 
     @staticmethod
     def assemble_error(message, code, data=None) -> dict:
-        response_data = {'jsonrpc': '2.0',
-                         'error': {'code': str(code),
-                                   'message': str(message),
-                                   'data': data},
-                         'id': None}  # error has no ID
-        return response_data
+        return {
+            'jsonrpc': '2.0',
+            'error': {'code': str(code), 'message': str(message), 'data': data},
+            'id': None,
+        }
 
     def __serialize(self, data: dict, delimiter=delimiter, as_bytes: bool = False) -> Union[str, bytes]:
 
@@ -175,9 +171,7 @@ class JSONRPCStdoutEmitter(StdoutEmitter):
 
         serialized_response = self.__serialize(data=data)
 
-        # Write to stdout file descriptor
-        number_of_written_bytes = self.sink(serialized_response)  # < ------ OUTLET
-        return number_of_written_bytes
+        return self.sink(serialized_response)
 
     def clear(self):
         pass
@@ -209,15 +203,12 @@ class JSONRPCStdoutEmitter(StdoutEmitter):
         try:
             assembled_error = self.assemble_error(message=e.message, code=e.code)
         except AttributeError:
-            if not isinstance(e, self.JSONRPCError):
-                self.log.info(str(e))
-                raise e  # a different error was raised
-            else:
+            if isinstance(e, self.JSONRPCError):
                 raise self.JSONRPCError
 
-        size = self.__write(data=assembled_error)
-        # self.log.info(f"Error {e.code} | {e.message}")  # TODO: Restore this log message
-        return size
+            self.log.info(str(e))
+            raise e  # a different error was raised
+        return self.__write(data=assembled_error)
 
     def get_stream(self, *args, **kwargs):
         return null_stream()
@@ -245,9 +236,7 @@ class WebEmitter:
 
     @staticmethod
     def assemble_response(response: dict) -> dict:
-        response_data = {'result': response,
-                         'version': str(nucypher.__version__)}
-        return response_data
+        return {'result': response, 'version': str(nucypher.__version__)}
 
     def exception(self,
                   e,
@@ -256,7 +245,7 @@ class WebEmitter:
                   response_code: int = 500):
 
         exception = f"{type(e).__name__}: {str(e)}" if str(e) else type(e).__name__
-        message = f"{self} [{str(response_code)} - {error_message}] | ERROR: {exception}"
+        message = f"{self} [{response_code} - {error_message}] | ERROR: {exception}"
         logger = getattr(self.log, log_level)
         # See #724 / 2156
         message_cleaned_for_logger = message.replace("{", "<^<").replace("}", ">^>")

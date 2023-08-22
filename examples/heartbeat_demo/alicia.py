@@ -14,6 +14,7 @@
  You should have received a copy of the GNU Affero General Public License
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import base64
 import datetime
 import sys
@@ -95,15 +96,16 @@ alicia.start_learning_loop(now=True)
 # At this point, Alicia is fully operational and can create policies.
 # The Policy Label is a bytestring that categorizes the data that Alicia wants to share.
 # Note: we add some random chars to create different policies, only for demonstration purposes
-label = "heart-data-❤️-"+os.urandom(4).hex()
+label = f"heart-data-❤️-{os.urandom(4).hex()}"
 label = label.encode()
 
 # Alicia can create the public key associated to the policy label,
 # even before creating any associated policy.
 policy_pubkey = alicia.get_policy_encrypting_key_from_label(label)
 
-print("The policy public key for "
-      "label '{}' is {}".format(label.decode("utf-8"), bytes(policy_pubkey).hex()))
+print(
+    f"""The policy public key for label '{label.decode("utf-8")}' is {bytes(policy_pubkey).hex()}"""
+)
 
 # Data Sources can produce encrypted data for access policies
 # that **don't exist yet**.

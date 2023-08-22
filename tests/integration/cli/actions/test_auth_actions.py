@@ -100,7 +100,7 @@ def test_get_nucypher_password(mock_stdin, mock_account, confirm, capsys):
     captured = capsys.readouterr()
     assert COLLECT_NUCYPHER_PASSWORD in captured.out
     if confirm:
-        prompt = COLLECT_NUCYPHER_PASSWORD + f" ({Keystore._MINIMUM_PASSWORD_LENGTH} character minimum)"
+        prompt = f"{COLLECT_NUCYPHER_PASSWORD} ({Keystore._MINIMUM_PASSWORD_LENGTH} character minimum)"
         assert prompt in captured.out
 
 
@@ -122,9 +122,11 @@ def test_unlock_nucypher_keystore_invalid_password(mocker,
 
     # Test
     with pytest.raises(Keystore.AuthenticationFailed):
-        unlock_nucypher_keystore(emitter=test_emitter,
-                                 password=INSECURE_DEVELOPMENT_PASSWORD+'typo',
-                                 character_configuration=alice_blockchain_test_config)
+        unlock_nucypher_keystore(
+            emitter=test_emitter,
+            password=f'{INSECURE_DEVELOPMENT_PASSWORD}typo',
+            character_configuration=alice_blockchain_test_config,
+        )
 
     captured = capsys.readouterr()
     assert DECRYPTING_CHARACTER_KEYSTORE.format(name=alice_blockchain_test_config.NAME.capitalize()) in captured.out

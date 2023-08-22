@@ -36,6 +36,9 @@ from tests.utils.blockchain import TesterBlockchain
 @contextmanager
 def mock_registry_source_manager(test_registry):
 
+
+
+
     class MockRegistrySource(CanonicalRegistrySource):
         name = "Mock Registry Source"
         is_primary = False
@@ -53,8 +56,8 @@ def mock_registry_source_manager(test_registry):
             self.logger.debug(f"Reading registry at {self.get_publication_endpoint()}")
             if self.registry_name == BaseContractRegistry.REGISTRY_NAME:
                 registry_data = test_registry.read()
-            raw_registry_data = json.dumps(registry_data)
-            return raw_registry_data
+            return json.dumps(registry_data)
+
 
     real_inventory = NetworksInventory.NETWORKS
     try:

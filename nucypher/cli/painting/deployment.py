@@ -67,7 +67,7 @@ def paint_contract_deployment(emitter,
     try:
         url = etherscan_url(item=contract_address, network=chain_name, is_token=is_token_contract)
     except ValueError as e:
-        emitter.log.info("Failed Etherscan URL construction: " + str(e))
+        emitter.log.info(f"Failed Etherscan URL construction: {str(e)}")
     else:
         emitter.echo(f" See {url}\n")
 
@@ -84,7 +84,7 @@ def paint_contract_deployment(emitter,
                                 network=chain_name,
                                 is_token=is_token_contract)
         except ValueError as e:
-            emitter.log.info("Failed Etherscan URL construction: " + str(e))
+            emitter.log.info(f"Failed Etherscan URL construction: {str(e)}")
         else:
             webbrowser.open_new_tab(url)
 

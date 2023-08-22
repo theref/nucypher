@@ -37,8 +37,7 @@ def get_json_observer_for_file(logfile):
 
 def expected_processing(string_with_curly_braces):
     ascii_string = py_encode_basestring_ascii(string_with_curly_braces)[1:-1]
-    expected_output = Logger.escape_format_string(ascii_string)
-    return expected_output
+    return Logger.escape_format_string(ascii_string)
 
 
 # Any string without curly braces won't have any problem

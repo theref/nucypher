@@ -131,7 +131,7 @@ class Character(Learner):
         #
 
         if keystore:
-            crypto_power_ups = list()
+            crypto_power_ups = []
             for power_up in self._default_crypto_powerups:
                 power = keystore.derive_crypto_power(power_class=power_up)
                 crypto_power_ups.append(power)
@@ -139,7 +139,7 @@ class Character(Learner):
 
         if crypto_power and crypto_power_ups:
             raise ValueError("Pass crypto_power or crypto_power_ups (or neither), but not both.")
-        crypto_power_ups = crypto_power_ups or list()  # type: list
+        crypto_power_ups = crypto_power_ups or []
 
         if crypto_power:
             self._crypto_power = crypto_power  # type: CryptoPower
@@ -193,12 +193,6 @@ class Character(Learner):
                                      f"does not match federated character's verifying key {derived_federated_address}")
                 checksum_address = derived_federated_address
 
-            self.checksum_address = checksum_address
-
-        #
-        # Stranger
-        #
-
         else:
             if network_middleware is not None:
                 raise TypeError("Network middleware cannot be attached to a Stranger-Character.")
@@ -210,7 +204,7 @@ class Character(Learner):
             self._stamp = StrangerStamp(verifying_key)
             self.keystore_dir = STRANGER
             self.network_middleware = STRANGER
-            self.checksum_address = checksum_address
+        self.checksum_address = checksum_address
 
         self.__setup_nickname(is_me=is_me)
 
@@ -302,7 +296,7 @@ class Character(Learner):
         crypto_power = CryptoPower()
 
         if powers_and_material is None:
-            powers_and_material = dict()
+            powers_and_material = {}
 
         if verifying_key:
             powers_and_material[SigningPower] = verifying_key
@@ -354,11 +348,10 @@ class Character(Learner):
         :return: the message kit.
         """
 
-        # TODO: who even uses this method except for tests?
-
-        message_kit = MessageKit(policy_encrypting_key=recipient.public_keys(DecryptingPower),
-                                 plaintext=plaintext)
-        return message_kit
+        return MessageKit(
+            policy_encrypting_key=recipient.public_keys(DecryptingPower),
+            plaintext=plaintext,
+        )
 
     def public_keys(self, power_up_class: ClassVar):
         """
@@ -372,13 +365,11 @@ class Character(Learner):
         return power_up.public_key()
 
     def derive_federated_address(self):
-        if self.federated_only:
-            verifying_key = self.public_keys(SigningPower)
-            verifying_key_as_eth_key = EthKeyAPI.PublicKey.from_compressed_bytes(bytes(verifying_key))
-            federated_address = verifying_key_as_eth_key.to_checksum_address()
-        else:
+        if not self.federated_only:
             raise RuntimeError('Federated address can only be derived for federated characters.')
-        return federated_address
+        verifying_key = self.public_keys(SigningPower)
+        verifying_key_as_eth_key = EthKeyAPI.PublicKey.from_compressed_bytes(bytes(verifying_key))
+        return verifying_key_as_eth_key.to_checksum_address()
 
     def make_rpc_controller(self, crash_on_error: bool = False):
         app_name = bytes(self.stamp).hex()[:6]

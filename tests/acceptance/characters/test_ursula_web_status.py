@@ -24,8 +24,7 @@ import tempfile
 
 @pytest.fixture(scope='module')
 def ursula(blockchain_ursulas):
-    ursula = blockchain_ursulas.pop()
-    return ursula
+    return blockchain_ursulas.pop()
 
 
 @pytest.fixture(scope='module')

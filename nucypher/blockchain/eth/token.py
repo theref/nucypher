@@ -108,10 +108,7 @@ class ERC20:
         return int(self) == int(other)
 
     def __bool__(self) -> bool:
-        if self.__value == 0:
-            return False
-        else:
-            return True
+        return self.__value != 0
 
     def __radd__(self, other) -> 'ERC20':
         return self.__class__(int(self) + int(other), self._unit_name)
@@ -151,8 +148,7 @@ class ERC20:
         return self.__class__.from_tokens(round(self.to_tokens(), decimals))
 
     def __repr__(self) -> str:
-        r = f'{self._symbol}(value={str(self.__value)})'
-        return r
+        return f'{self._symbol}(value={str(self.__value)})'
 
     def __str__(self) -> str:
         return f'{str(self.to_tokens())} {self._symbol}'
@@ -190,7 +186,7 @@ class WorkTrackerBase:
         self._tracking_task = task.LoopingCall(self._do_work)
         self._tracking_task.clock = self.CLOCK
 
-        self.__pending = dict()  # TODO: Prime with pending worker transactions
+        self.__pending = {}
         self.__requirement = None
         self.__start_time = NOT_STAKING
         self.__uptime_period = NOT_STAKING
@@ -209,13 +205,12 @@ class WorkTrackerBase:
 
     def max_confirmation_time(self) -> int:
         expected_time = EXPECTED_CONFIRMATION_TIME_IN_SECONDS[self.gas_strategy]  # FIXME: #2447
-        result = expected_time * (1 + self.ALLOWED_DEVIATION)
-        return result
+        return expected_time * (1 + self.ALLOWED_DEVIATION)
 
     def stop(self) -> None:
         if self._tracking_task.running:
             self._tracking_task.stop()
-            self.log.info(f"STOPPED WORK TRACKING")
+            self.log.info("STOPPED WORK TRACKING")
 
     def start(self, commit_now: bool = True, requirement_func: Callable = None, force: bool = False) -> None:
         """
@@ -269,7 +264,7 @@ class WorkTrackerBase:
             return True
         r = self.__requirement(self.worker)
         if not isinstance(r, bool):
-            raise ValueError(f"'requirement' must return a boolean.")
+            raise ValueError("'requirement' must return a boolean.")
         return r
 
     @property
@@ -285,10 +280,7 @@ class WorkTrackerBase:
         if len(self.__pending) == txs_in_mempool:
             return True  # OK!
 
-        if txs_in_mempool > len(self.__pending):  # We're missing some pending TXs
-            return False
-        else:  # TODO #2429: What to do when txs_in_mempool < len(self.__pending)? What does this imply?
-            return True
+        return txs_in_mempool <= len(self.__pending)
 
     def __track_pending_commitments(self) -> bool:
         # TODO: Keep a purpose-built persistent log of worker transaction history
@@ -334,7 +326,7 @@ class WorkTrackerBase:
         tx_firing_block_number, txhash = list(sorted(self.pending.items()))[0]
         if txhash is UNTRACKED_PENDING_TRANSACTION:
             # TODO: Detect if this untracked pending transaction is a commitment transaction at all.
-            message = f"We have an untracked pending transaction. Issuing a replacement transaction."
+            message = "We have an untracked pending transaction. Issuing a replacement transaction."
         else:
             # If the transaction is still not mined after a max confirmation time
             # (based on current gas strategy) issue a replacement transaction.
@@ -345,7 +337,7 @@ class WorkTrackerBase:
                 return
             else:
                 message = f"We've waited for {wait_time_in_seconds}, but max time is {self.max_confirmation_time()}" \
-                          f" for {self.gas_strategy} gas strategy. Issuing a replacement transaction."
+                              f" for {self.gas_strategy} gas strategy. Issuing a replacement transaction."
 
         # Send a replacement transaction
         self.log.info(message)
@@ -373,9 +365,7 @@ class WorkTrackerBase:
         if self._prep_work_state() is False:
             return
 
-        # Commitment tracking
-        unmined_transactions = self.__track_pending_commitments()
-        if unmined_transactions:
+        if unmined_transactions := self.__track_pending_commitments():
             self.log.info('Tracking pending transaction.')
             self.__handle_replacement_commitment(current_block_number=current_block_number)
             # while there are known pending transactions, remain in fast interval mode

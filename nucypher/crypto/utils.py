@@ -38,8 +38,7 @@ def canonical_address_from_umbral_key(public_key: Union[PublicKey, SignatureStam
         public_key = public_key.as_umbral_pubkey()
     pubkey_compressed_bytes = bytes(public_key)
     eth_pubkey = EthKeyAPI.PublicKey.from_compressed_bytes(pubkey_compressed_bytes)
-    canonical_address = eth_pubkey.to_canonical_address()
-    return canonical_address
+    return eth_pubkey.to_canonical_address()
 
 
 def secure_random(num_bytes: int) -> bytes:
@@ -103,8 +102,7 @@ def sha256_digest(*messages: bytes) -> bytes:
     _hash_ctx = hashes.Hash(hashes.SHA256(), backend=backend)
     for message in messages:
         _hash_ctx.update(bytes(message))
-    digest = _hash_ctx.finalize()
-    return digest
+    return _hash_ctx.finalize()
 
 
 def recover_address_eip_191(message: bytes, signature: bytes) -> str:
@@ -113,8 +111,7 @@ def recover_address_eip_191(message: bytes, signature: bytes) -> str:
     """
     signable_message = encode_defunct(primitive=message)
     recovery = Account.recover_message(signable_message=signable_message, signature=signature)
-    recovered_address = to_checksum_address(recovery)
-    return recovered_address
+    return to_checksum_address(recovery)
 
 
 def verify_eip_191(address: str, message: bytes, signature: bytes) -> bool:
@@ -122,5 +119,4 @@ def verify_eip_191(address: str, message: bytes, signature: bytes) -> bool:
     EIP-191 Compatible signature verification for usage with w3.eth.sign.
     """
     recovered_address = recover_address_eip_191(message=message, signature=signature)
-    signature_is_valid = recovered_address == to_checksum_address(address)
-    return signature_is_valid
+    return recovered_address == to_checksum_address(address)

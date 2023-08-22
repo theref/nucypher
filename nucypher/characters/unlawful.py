@@ -122,7 +122,7 @@ class Vladimir(Ursula):
         try:
             password = 'iamverybadass'
             blockchain.w3.provider.ethereum_tester.add_account(cls.fraud_key, password=password)
-        except (ValidationError,):
+        except ValidationError:
             # check if Vlad's key is already on the keystore...
             if cls.fraud_address in blockchain.client.accounts:
                 return True

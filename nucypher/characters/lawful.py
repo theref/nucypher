@@ -188,8 +188,8 @@ class Alice(Character, BlockchainPolicyAuthor):
             self.duration = duration
 
             # Settings
-            self.active_policies = dict()
-            self.revocation_kits = dict()
+            self.active_policies = {}
+            self.revocation_kits = {}
             self.store_policy_credentials = store_policy_credentials
             self.store_character_cards = store_character_cards
 
@@ -197,8 +197,7 @@ class Alice(Character, BlockchainPolicyAuthor):
 
     def get_card(self) -> 'Card':
         from nucypher.policy.identity import Card
-        card = Card.from_character(self)
-        return card
+        return Card.from_character(self)
 
     def add_active_policy(self, active_policy):
         """
@@ -228,12 +227,13 @@ class Alice(Character, BlockchainPolicyAuthor):
 
         bob_encrypting_key = bob.public_keys(DecryptingPower)
         delegating_power = self._crypto_power.power_ups(DelegatingPower)
-        policy_key_and_kfrags = delegating_power.generate_kfrags(bob_pubkey_enc=bob_encrypting_key,
-                                                                 signer=self.stamp.as_umbral_signer(),
-                                                                 label=label,
-                                                                 threshold=threshold or self.threshold,
-                                                                 shares=shares or self.shares)
-        return policy_key_and_kfrags
+        return delegating_power.generate_kfrags(
+            bob_pubkey_enc=bob_encrypting_key,
+            signer=self.stamp.as_umbral_signer(),
+            label=label,
+            threshold=threshold or self.threshold,
+            shares=shares or self.shares,
+        )
 
     def create_policy(self, bob: "Bob", label: bytes, **policy_params):
         """
@@ -257,13 +257,10 @@ class Alice(Character, BlockchainPolicyAuthor):
 
         if self.federated_only:
             # Use known nodes
-            policy = FederatedPolicy(publisher=self, **payload)
-        else:
-            # Sample from blockchain
-            payload.update(**policy_params)
-            policy = BlockchainPolicy(publisher=self, **payload)
-
-        return policy
+            return FederatedPolicy(publisher=self, **payload)
+        # Sample from blockchain
+        payload.update(**policy_params)
+        return BlockchainPolicy(publisher=self, **payload)
 
     def generate_policy_parameters(self,
                                    threshold: Optional[int] = None,
@@ -297,7 +294,7 @@ class Alice(Character, BlockchainPolicyAuthor):
             value=value
         )
 
-        params = dict(
+        return dict(
             payment_method=payment_method,
             threshold=threshold,
             shares=shares,
@@ -305,9 +302,8 @@ class Alice(Character, BlockchainPolicyAuthor):
             commencement=quote.commencement,
             expiration=quote.expiration,
             rate=quote.rate,
-            value=quote.value
+            value=quote.value,
         )
-        return params
 
     def _check_grant_requirements(self, policy):
         """Called immediately before granting."""
@@ -355,10 +351,8 @@ class Alice(Character, BlockchainPolicyAuthor):
                                                                    timeout=timeout)
             if not good_to_go:
                 raise ValueError(
-                    "To make a Policy in federated mode, you need to know about "
-                    "all the Ursulas you need (in this case, {}); there's no other way to "
-                    "know which nodes to use.  Either pass them here or when you make the Policy, "
-                    "or run the learning loop on a network with enough Ursulas.".format(policy.shares))
+                    f"To make a Policy in federated mode, you need to know about all the Ursulas you need (in this case, {policy.shares}); there's no other way to know which nodes to use.  Either pass them here or when you make the Policy, or run the learning loop on a network with enough Ursulas."
+                )
 
         self.log.debug(f"Enacting {policy} ... ")
         enacted_policy = policy.enact(network_middleware=self.network_middleware, ursulas=ursulas)
@@ -368,8 +362,7 @@ class Alice(Character, BlockchainPolicyAuthor):
 
     def get_policy_encrypting_key_from_label(self, label: bytes) -> PublicKey:
         alice_delegating_power = self._crypto_power.power_ups(DelegatingPower)
-        policy_pubkey = alice_delegating_power.get_pubkey_from_label(label)
-        return policy_pubkey
+        return alice_delegating_power.get_pubkey_from_label(label)
 
     def revoke(self,
                policy: Policy,
@@ -380,13 +373,7 @@ class Alice(Character, BlockchainPolicyAuthor):
         if not (offchain or onchain):
             raise ValueError('offchain or onchain must be True to issue revocation')
 
-        receipt, failed = dict(), dict()
-
-        if onchain and (not self.federated_only):
-            pass
-            # TODO: Decouple onchain revocation from SubscriptionManager or deprecate.
-            # receipt = self.policy_agent.revoke_policy(policy_id=bytes(policy.hrac),
-            #                                           transacting_power=self._crypto_power.power_ups(TransactingPower))
+        receipt, failed = {}, {}
 
         if offchain:
             """
@@ -539,8 +526,7 @@ class Bob(Character):
 
     def get_card(self) -> 'Card':
         from nucypher.policy.identity import Card
-        card = Card.from_character(self)
-        return card
+        return Card.from_character(self)
 
     def _decrypt_treasure_map(self,
                               encrypted_treasure_map: EncryptedTreasureMap,
@@ -604,12 +590,12 @@ class Bob(Character):
             bob_encrypting_key=self.public_keys(DecryptingPower),
             bob_verifying_key=self.stamp.as_umbral_pubkey())
 
-        # Refill message kits with newly retrieved capsule frags
-        results = []
-        for message_kit, retrieval_result in zip(message_kits, retrieval_results):
-            results.append(message_kit.with_result(retrieval_result))
-
-        return results
+        return [
+            message_kit.with_result(retrieval_result)
+            for message_kit, retrieval_result in zip(
+                message_kits, retrieval_results
+            )
+        ]
 
     def retrieve_and_decrypt(self, *args, **kwds) -> List[bytes]:
         """
@@ -802,7 +788,7 @@ class Ursula(Teacher, Character, Operator):
             self.revoked_policies: Set[bytes] = set()
 
             # Care to introduce yourself?
-            message = "THIS IS YOU: {}: {}".format(self.__class__.__name__, self)
+            message = f"THIS IS YOU: {self.__class__.__name__}: {self}"
             self.log.info(message)
             self.log.info(self.banner.format(self.nickname))
 
@@ -839,12 +825,13 @@ class Ursula(Teacher, Character, Operator):
             this_node=self,
             db_filepath=db_filepath,
         )
-        rest_server = ProxyRESTServer(rest_host=host,
-                                      rest_port=port,
-                                      rest_app=rest_app,
-                                      datastore=datastore,
-                                      hosting_power=self.__get_hosting_power(host=host))
-        return rest_server
+        return ProxyRESTServer(
+            rest_host=host,
+            rest_port=port,
+            rest_app=rest_app,
+            datastore=datastore,
+            hosting_power=self.__get_hosting_power(host=host),
+        )
 
     def __substantiate_stamp(self):
         transacting_power = self._crypto_power.power_ups(TransactingPower)
@@ -860,22 +847,14 @@ class Ursula(Teacher, Character, Operator):
 
     @property
     def operator_address(self):
-        if not self.federated_only:
-            # TODO (#2875): The reason for the fork here is the difference in available information
-            # for local and remote nodes.
-            # The local node knows its operator address, but doesn't yet know the staker address.
-            # For the remote node, we know its staker address (from the metadata),
-            # but don't know the worker address.
-            # Can this be resolved more elegantly?
-            if getattr(self, 'is_me', False):
-                return self._local_operator_address()
-            else:
-                if not self.__operator_address:
-                    operator_address = to_checksum_address(self.metadata().payload.derive_operator_address())
-                    self.__operator_address = operator_address
-                return self.__operator_address
-        else:
+        if self.federated_only:
             raise RuntimeError("Federated nodes do not have an operator address")
+        if getattr(self, 'is_me', False):
+            return self._local_operator_address()
+        if not self.__operator_address:
+            operator_address = to_checksum_address(self.metadata().payload.derive_operator_address())
+            self.__operator_address = operator_address
+        return self.__operator_address
 
     def __preflight(self) -> None:
         """Called immediately before running services
@@ -900,9 +879,8 @@ class Ursula(Teacher, Character, Operator):
 
         """Schedule and start select ursula services, then optionally start the reactor."""
 
-        # Connect to Provider
-        if not self.federated_only:
-            if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=self.eth_provider_uri):
+        if not BlockchainInterfaceFactory.is_interface_initialized(eth_provider_uri=self.eth_provider_uri):
+            if not self.federated_only:
                 BlockchainInterfaceFactory.initialize_interface(eth_provider_uri=self.eth_provider_uri)
 
         if preflight:
@@ -913,7 +891,7 @@ class Ursula(Teacher, Character, Operator):
         #
 
         if emitter:
-            emitter.message(f"Starting services", color='yellow')
+            emitter.message("Starting services", color='yellow')
 
         if discovery and not self.lonely:
             self.start_learning_loop(now=eager)
@@ -923,15 +901,14 @@ class Ursula(Teacher, Character, Operator):
         if self._availability_check or availability:
             self._availability_tracker.start(now=eager)
             if emitter:
-                emitter.message(f"✓ Availability Checks", color='green')
+                emitter.message("✓ Availability Checks", color='green')
 
         if worker and not self.federated_only:
             if block_until_ready:
                 # Sets (staker's) checksum address; Prevent worker startup before bonding
                 self.block_until_ready()
 
-            work_is_needed = self.get_work_is_needed_check()(self)
-            if work_is_needed:
+            if work_is_needed := self.get_work_is_needed_check()(self):
                 message = "✓ Work Tracking"
                 self.work_tracker.start(commit_now=True, requirement_func=self.work_tracker.worker.get_work_is_needed_check())  # requirement_func=self._availability_tracker.status)  # TODO: #2277
             else:
@@ -947,14 +924,14 @@ class Ursula(Teacher, Character, Operator):
         if not self.federated_only:
             self._operator_bonded_tracker.start(now=eager)
             if emitter:
-                emitter.message(f"✓ Start Operator Bonded Tracker", color='green')
+                emitter.message("✓ Start Operator Bonded Tracker", color='green')
 
         if prometheus_config:
             # Locally scoped to prevent import without prometheus explicitly installed
             from nucypher.utilities.prometheus.metrics import start_prometheus_exporter
             start_prometheus_exporter(ursula=self, prometheus_config=prometheus_config)
             if emitter:
-                emitter.message(f"✓ Prometheus Exporter", color='green')
+                emitter.message("✓ Prometheus Exporter", color='green')
 
         if interactive and emitter:
             stdio.StandardIO(UrsulaCommandProtocol(ursula=self, emitter=emitter))
@@ -1029,8 +1006,9 @@ class Ursula(Teacher, Character, Operator):
 
     def get_deployer(self):
         port = self.rest_interface.port
-        deployer = self._crypto_power.power_ups(TLSHostingPower).get_deployer(rest_app=self.rest_app, port=port)
-        return deployer
+        return self._crypto_power.power_ups(TLSHostingPower).get_deployer(
+            rest_app=self.rest_app, port=port
+        )
 
     @property
     def operator_signature_from_metadata(self):
@@ -1041,10 +1019,7 @@ class Ursula(Teacher, Character, Operator):
         # so we can cache the result of this method.
         # TODO: should this be a method of Teacher?
         timestamp = maya.now()
-        if self.federated_only:
-            operator_signature = None
-        else:
-            operator_signature = self.operator_signature
+        operator_signature = None if self.federated_only else self.operator_signature
         payload = NodeMetadataPayload(staking_provider_address=self.canonical_address,
                                       domain=self.domain,
                                       timestamp_epoch=timestamp.epoch,
@@ -1083,8 +1058,7 @@ class Ursula(Teacher, Character, Operator):
                       host: str,
                       port: int):
         response_data = network_middleware.client.node_information(host, port)
-        stranger_ursula_from_public_keys = cls.from_metadata_bytes(response_data)
-        return stranger_ursula_from_public_keys
+        return cls.from_metadata_bytes(response_data)
 
     @classmethod
     def from_seednode_metadata(cls, seednode_metadata, *args, **kwargs):
@@ -1106,8 +1080,7 @@ class Ursula(Teacher, Character, Operator):
             raise ValueError(f'"{network}" is not a known network.')
         except IndexError:
             raise ValueError(f'No default seednodes available for "{network}".')
-        ursula = cls.from_seed_and_stake_info(seed_uri=url)
-        return ursula
+        return cls.from_seed_and_stake_info(seed_uri=url)
 
     @classmethod
     def from_teacher_uri(cls,
@@ -1211,11 +1184,10 @@ class Ursula(Teacher, Character, Operator):
     def rest_app(self):
         rest_app_on_server = self.rest_server.rest_app
 
-        if rest_app_on_server is PUBLIC_ONLY or not rest_app_on_server:
-            m = "This Ursula doesn't have a REST app attached. If you want one, init with is_me and attach_server."
-            raise PowerUpError(m)
-        else:
+        if rest_app_on_server is not PUBLIC_ONLY and rest_app_on_server:
             return rest_app_on_server
+        m = "This Ursula doesn't have a REST app attached. If you want one, init with is_me and attach_server."
+        raise PowerUpError(m)
 
     def interface_info_with_metadata(self):
         # TODO: Do we ever actually use this without using the rest of the serialized Ursula?  337
@@ -1253,11 +1225,7 @@ class Ursula(Teacher, Character, Operator):
         else:
             known_nodes_info = None
 
-        if not self.federated_only:
-            balance_eth = float(self.eth_balance)
-        else:
-            balance_eth = None
-
+        balance_eth = float(self.eth_balance) if not self.federated_only else None
         return LocalUrsulaStatus(nickname=self.nickname,
                                  staker_address=self.checksum_address,
                                  operator_address=self.operator_address,
@@ -1332,10 +1300,9 @@ class Enrico(Character):
             self.log.info(self.banner.format(policy_encrypting_key))
 
     def encrypt_message(self, plaintext: bytes) -> MessageKit:
-        # TODO: #2107 Rename to "encrypt"
-        message_kit = MessageKit(policy_encrypting_key=self.policy_pubkey,
-                                 plaintext=plaintext)
-        return message_kit
+        return MessageKit(
+            policy_encrypting_key=self.policy_pubkey, plaintext=plaintext
+        )
 
     @classmethod
     def from_alice(cls, alice: Alice, label: bytes):

@@ -43,7 +43,9 @@ class UrsulaCommandProtocol(LineReceiver):
         self.start_time = maya.now()
 
         self.__history = deque(maxlen=10)
-        self.prompt = bytes('Ursula({}) >>> '.format(self.ursula.checksum_address[:9]), encoding='utf-8')
+        self.prompt = bytes(
+            f'Ursula({self.ursula.checksum_address[:9]}) >>> ', encoding='utf-8'
+        )
 
         # Expose Ursula functional entry points
         self.__commands = {
@@ -177,7 +179,7 @@ class JSONRPCLineReceiver(LineReceiver):
         self.rpc_controller = rpc_controller
         self.start_time = maya.now()
 
-        self.__captured_output = list()
+        self.__captured_output = []
         self.capture_output = capture_output
 
         self.__ipc_fd = None
@@ -210,6 +212,5 @@ class JSONRPCLineReceiver(LineReceiver):
         pass
 
     def lineReceived(self, line):
-        line = line.strip(self.delimiter)
-        if line:
+        if line := line.strip(self.delimiter):
             self.rpc_controller.handle_request(control_request=line)

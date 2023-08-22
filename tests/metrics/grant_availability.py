@@ -113,14 +113,15 @@ def metric_grant(alice, ursulas: Optional[Set[Ursula]] = None) -> Policy:
     """Perform a granting operation for metrics collection."""
     label = f'{LABEL_PREFIX}{LABEL_SUFFIXER()}'.encode()
     policy_end_datetime = maya.now() + DURATION
-    policy = alice.grant(threshold=THRESHOLD,
-                         shares=SHARES,
-                         ursulas=handpicked_ursulas,
-                         expiration=policy_end_datetime,
-                         bob=BOB,
-                         label=label,
-                         rate=RATE)
-    return policy
+    return alice.grant(
+        threshold=THRESHOLD,
+        shares=SHARES,
+        ursulas=handpicked_ursulas,
+        expiration=policy_end_datetime,
+        bob=BOB,
+        label=label,
+        rate=RATE,
+    )
 
 
 def collect(alice: Alice,
@@ -128,7 +129,7 @@ def collect(alice: Alice,
             iterations: Optional[int] = DEFAULT_ITERATIONS,
             ) -> None:
     """Collects grant success and failure rates."""
-    policies, i, success, fail = dict(), 0, 0, 0
+    policies, i, success, fail = {}, 0, 0, 0
     while True:
         print(f"Attempt {i+1} of {iterations if iterations is not None else 'infinite'}")
         start = maya.now()

@@ -174,15 +174,15 @@ def _ensure_dir_exists(path):
 def get_json_file_observer(name=DEFAULT_JSON_LOG_FILENAME, path=USER_LOG_DIR):
     _ensure_dir_exists(path)
     logfile = LogFile(name=name, directory=path, rotateLength=MAXIMUM_LOG_SIZE, maxRotatedFiles=MAX_LOG_FILES)
-    observer = jsonFileLogObserver(outFile=logfile)
-    return observer
+    return jsonFileLogObserver(outFile=logfile)
 
 
 def get_text_file_observer(name=DEFAULT_LOG_FILENAME, path=USER_LOG_DIR):
     _ensure_dir_exists(path)
     logfile = LogFile(name=name, directory=path, rotateLength=MAXIMUM_LOG_SIZE, maxRotatedFiles=MAX_LOG_FILES)
-    observer = FileLogObserver(formatEvent=formatEventAsClassicLogText, outFile=logfile)
-    return observer
+    return FileLogObserver(
+        formatEvent=formatEventAsClassicLogText, outFile=logfile
+    )
 
 
 class Logger(TwistedLogger):
@@ -196,8 +196,7 @@ class Logger(TwistedLogger):
         """
         Escapes all curly braces from a PEP-3101's format string.
         """
-        escaped_string = string.replace("{", "{{").replace("}", "}}")
-        return escaped_string
+        return string.replace("{", "{{").replace("}", "}}")
 
     def emit(self, level, format=None, **kwargs):
         clean_format = self.escape_format_string(str(format))

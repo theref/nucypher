@@ -28,12 +28,11 @@ from tests.mock.interfaces import MockEthereumClient
 def receipt():
     block_number_of_my_tx = 42
     my_tx_hash = HexBytes('0xFabadaAcabada')
-    receipt = {
+    return {
         'transactionHash': my_tx_hash,
         'blockNumber': block_number_of_my_tx,
-        'blockHash': HexBytes('0xBebeCafe')
+        'blockHash': HexBytes('0xBebeCafe'),
     }
-    return receipt
 
 
 def test_check_transaction_is_on_chain(mocker, mock_ethereum_client, receipt):
@@ -50,7 +49,7 @@ def test_check_transaction_is_on_chain(mocker, mock_ethereum_client, receipt):
 
     # Let's assume that our TX ends up mined in a different block, and we receive a new receipt
     new_receipt = dict(receipt)
-    new_receipt.update({'blockHash': HexBytes('0xBebeCebada')})
+    new_receipt['blockHash'] = HexBytes('0xBebeCebada')
 
     web3_mock.eth.getTransactionReceipt = mocker.Mock(return_value=new_receipt)
 

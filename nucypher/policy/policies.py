@@ -99,8 +99,7 @@ class Policy(ABC):
 
     def _publish(self, ursulas: List['Ursula']) -> Dict:
         self.nodes = [ursula.checksum_address for ursula in ursulas]
-        receipt = self.payment_method.pay(policy=self)
-        return receipt
+        return self.payment_method.pay(policy=self)
 
     def _ping_node(self, address: ChecksumAddress, network_middleware: RestMiddleware) -> 'Ursula':
         # Handles edge case when provided address is not a known peer.
@@ -188,15 +187,15 @@ class Policy(ABC):
         # TODO: Signal revocation without using encrypted kfrag
         revocation_kit = RevocationKit(treasure_map=treasure_map, signer=self.publisher.stamp)
 
-        enacted_policy = EnactedPolicy(self.hrac,
-                                       self.label,
-                                       self.public_key,
-                                       treasure_map.threshold,
-                                       enc_treasure_map,
-                                       revocation_kit,
-                                       self.publisher.stamp.as_umbral_pubkey())
-
-        return enacted_policy
+        return EnactedPolicy(
+            self.hrac,
+            self.label,
+            self.public_key,
+            treasure_map.threshold,
+            enc_treasure_map,
+            revocation_kit,
+            self.publisher.stamp.as_umbral_pubkey(),
+        )
 
 
 class FederatedPolicy(Policy):
@@ -211,9 +210,10 @@ class BlockchainPolicy(Policy):
 
     def _make_reservoir(self, handpicked_addresses: List[ChecksumAddress]):
         """Returns a reservoir of staking nodes to create a decentralized policy."""
-        reservoir = make_decentralized_staking_provider_reservoir(application_agent=self.publisher.application_agent,
-                                                                  include_addresses=handpicked_addresses)
-        return reservoir
+        return make_decentralized_staking_provider_reservoir(
+            application_agent=self.publisher.application_agent,
+            include_addresses=handpicked_addresses,
+        )
 
 
 class EnactedPolicy:

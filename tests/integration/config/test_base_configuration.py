@@ -67,9 +67,7 @@ class RestorableTestItem(BaseConfiguration):
         super().__init__(*args, **kwargs)
 
     def static_payload(self) -> dict:
-        payload = dict(**super().static_payload(),
-                       item=self.item)
-        return payload
+        return dict(**super().static_payload(), item=self.item)
 
 
 def test_base_configuration_defaults():
@@ -84,7 +82,6 @@ def test_configuration_implementation():
     with pytest.raises(TypeError):
         _bad_item = BaseConfiguration()
 
-    # Subclasses must implement static_payload specification
     class BadConfigurableItem(BaseConfiguration):
         VERSION = 1
         pass
@@ -92,18 +89,20 @@ def test_configuration_implementation():
     with pytest.raises(TypeError):
         _bad_item = BadConfigurableItem()
 
-    # Subclasses must implement _NAME
+
+
     class NoNameItem(BaseConfiguration):
         VERSION = 1
         def static_payload(self) -> dict:
             item_payload = {'key': 'value'}
-            payload = {**super().static_payload(), **item_payload}
-            return payload
+            return {**super().static_payload(), **item_payload}
+
 
     with pytest.raises(TypeError):
         _bad_item = NoNameItem()
 
-    # Correct minimum viable implementation
+
+
     class BareMinimumConfigurableItem(BaseConfiguration):
 
         NAME = 'bare-minimum'
@@ -111,8 +110,8 @@ def test_configuration_implementation():
 
         def static_payload(self) -> dict:
             item_payload = {'key': 'value'}
-            payload = {**super().static_payload(), **item_payload}
-            return payload
+            return {**super().static_payload(), **item_payload}
+
 
     _bare_minimum = BareMinimumConfigurableItem()
 

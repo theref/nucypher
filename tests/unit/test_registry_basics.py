@@ -35,7 +35,7 @@ def test_contract_registry(tempfile_path):
     # Tests everything is as it should be when initially created
     test_registry = LocalContractRegistry(filepath=tempfile_path)
 
-    assert test_registry.read() == list()
+    assert test_registry.read() == []
     registry_id = test_registry.id
     assert test_registry.id == registry_id
 
@@ -56,7 +56,7 @@ def test_contract_registry(tempfile_path):
 
     # Search by name...
     contract_records = test_registry.search(contract_name=test_name)
-    assert len(contract_records) == 1, 'More than one record for {}'.format(test_name)
+    assert len(contract_records) == 1, f'More than one record for {test_name}'
     assert len(contract_records[0]) == 4, 'Registry record is the wrong length'
     name, version, address, abi = contract_records[0]
 

@@ -32,8 +32,7 @@ def agent(testerchain, test_registry) -> NucypherTokenAgent:
     tpower = TransactingPower(account=origin, signer=Web3Signer(testerchain.client))
 
     token_deployer.deploy(transacting_power=tpower)
-    token_agent = token_deployer.make_agent()
-    return token_agent
+    return token_deployer.make_agent()
 
 
 @pytest.mark.skip()

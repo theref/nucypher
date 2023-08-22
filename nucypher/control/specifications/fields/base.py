@@ -64,7 +64,7 @@ class Integer(BaseField, fields.Integer):
 
 class PositiveInteger(Integer):
     def _validate(self, value):
-        if not value > 0:
+        if value <= 0:
             raise InvalidInputData(f"{self.name} must be a positive integer.")
 
 

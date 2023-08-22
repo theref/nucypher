@@ -35,7 +35,7 @@ def generate_heart_rate_samples(policy_pubkey,
     heart_rate = 80
     now = time.time()
 
-    kits = list()
+    kits = []
     for _ in range(samples):
         # Simulated heart rate data
         # Normal resting heart rate for adults: between 60 to 100 BPM

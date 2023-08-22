@@ -16,6 +16,7 @@
 """
 
 
+
 import datetime
 import maya
 import os
@@ -128,8 +129,7 @@ print("**************James Joyce's Finnegan's Wake (Excerpt)**************")
 print()
 print("---------------------------------------------------------")
 
-for counter, plaintext in enumerate(finnegans_wake):
-
+for plaintext in finnegans_wake:
     #########################
     # Enrico, the Encryptor #
     #########################
@@ -155,6 +155,6 @@ for counter, plaintext in enumerate(finnegans_wake):
 
     # We show that indeed this is the passage originally encrypted by Enrico.
     assert plaintext == delivered_cleartexts[0]
-    print("Retrieved: {}".format(delivered_cleartexts[0]))
+    print(f"Retrieved: {delivered_cleartexts[0]}")
 
 bob.disenchant()

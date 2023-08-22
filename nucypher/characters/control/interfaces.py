@@ -60,14 +60,15 @@ class AliceInterface(CharacterPublicInterface):
             expiration=expiration,
             value=value
         )
-        response_data = {'label': new_policy.label, 'policy_encrypting_key': new_policy.public_key}
-        return response_data
+        return {
+            'label': new_policy.label,
+            'policy_encrypting_key': new_policy.public_key,
+        }
 
     @attach_schema(alice.DerivePolicyEncryptionKey)
     def derive_policy_encrypting_key(self, label: bytes) -> dict:
         policy_encrypting_key = self.implementer.get_policy_encrypting_key_from_label(label)
-        response_data = {'policy_encrypting_key': policy_encrypting_key, 'label': label}
-        return response_data
+        return {'policy_encrypting_key': policy_encrypting_key, 'label': label}
 
     @attach_schema(alice.GrantPolicy)
     def grant(self,
@@ -93,13 +94,13 @@ class AliceInterface(CharacterPublicInterface):
                                             rate=rate,
                                             expiration=expiration)
 
-        response_data = {'treasure_map': new_policy.treasure_map,
-                         'policy_encrypting_key': new_policy.public_key,
-                         # For the users of this interface, Publisher is always the same as Alice,
-                         # so we are only returning the Alice's key.
-                         'alice_verifying_key': self.implementer.stamp.as_umbral_pubkey()}
-
-        return response_data
+        return {
+            'treasure_map': new_policy.treasure_map,
+            'policy_encrypting_key': new_policy.public_key,
+            # For the users of this interface, Publisher is always the same as Alice,
+            # so we are only returning the Alice's key.
+            'alice_verifying_key': self.implementer.stamp.as_umbral_pubkey(),
+        }
 
     @attach_schema(alice.Revoke)
     def revoke(self, label: bytes, bob_verifying_key: PublicKey) -> dict:
@@ -117,8 +118,7 @@ class AliceInterface(CharacterPublicInterface):
         if len(failed_revocations) <= (policy.shares - policy.threshold + 1):
             del (self.implementer.active_policies[policy_hrac])
 
-        response_data = {'failed_revocations': len(failed_revocations)}
-        return response_data
+        return {'failed_revocations': len(failed_revocations)}
 
     @attach_schema(alice.Decrypt)
     def decrypt(self, label: bytes, message_kit: MessageKit) -> dict:
@@ -130,8 +130,7 @@ class AliceInterface(CharacterPublicInterface):
             label=label
         )
 
-        response = {'cleartexts': plaintexts}
-        return response
+        return {'cleartexts': plaintexts}
 
     @attach_schema(alice.PublicKeys)
     def public_keys(self) -> dict:
@@ -139,8 +138,7 @@ class AliceInterface(CharacterPublicInterface):
         Character control endpoint for getting Alice's public keys.
         """
         verifying_key = self.implementer.public_keys(SigningPower)
-        response_data = {'alice_verifying_key': verifying_key}
-        return response_data
+        return {'alice_verifying_key': verifying_key}
 
 
 class BobInterface(CharacterPublicInterface):
@@ -157,8 +155,7 @@ class BobInterface(CharacterPublicInterface):
                                                            alice_verifying_key=alice_verifying_key,
                                                            encrypted_treasure_map=encrypted_treasure_map)
 
-        response_data = {'cleartexts': plaintexts}
-        return response_data
+        return {'cleartexts': plaintexts}
 
     @attach_schema(bob.PublicKeys)
     def public_keys(self) -> dict:
@@ -167,8 +164,10 @@ class BobInterface(CharacterPublicInterface):
         """
         verifying_key = self.implementer.public_keys(SigningPower)
         encrypting_key = self.implementer.public_keys(DecryptingPower)
-        response_data = {'bob_encrypting_key': encrypting_key, 'bob_verifying_key': verifying_key}
-        return response_data
+        return {
+            'bob_encrypting_key': encrypting_key,
+            'bob_verifying_key': verifying_key,
+        }
 
 
 class EnricoInterface(CharacterPublicInterface):
@@ -180,5 +179,4 @@ class EnricoInterface(CharacterPublicInterface):
         receiving the messagekit (and signature) to give to Bob.
         """
         message_kit = self.implementer.encrypt_message(plaintext=plaintext)
-        response_data = {'message_kit': message_kit}
-        return response_data
+        return {'message_kit': message_kit}

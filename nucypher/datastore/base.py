@@ -91,12 +91,9 @@ class DatastoreRecord:
         if self.__writeable is None:
             super().__setattr__(attr, value)
 
-        # Datastore records are not writeable/mutable by default, so we
-        # raise a TypeError in the event that writeable is False.
         elif self.__writeable is False:
             raise TypeError("This datastore record isn't writeable.")
 
-        # A datastore record is only mutated iff writeable is True.
         elif self.__writeable is True:
             record_field = self.__get_record_field(attr)
 
@@ -104,7 +101,7 @@ class DatastoreRecord:
             if value is None:
                 return self.__delete_record(attr)
 
-            if not type(value) == record_field.field_type:
+            if type(value) != record_field.field_type:
                 raise TypeError(f'Given record is type {type(value)}; expected {record_field.field_type}')
             field_value = msgpack.packb(record_field.encode(value))
             self.__write_raw_record(attr, field_value)
@@ -128,7 +125,7 @@ class DatastoreRecord:
         # the db, unpack it, then use the `RecordField` to deserialize it.
         record_field = self.__get_record_field(attr)
         field_value = record_field.decode(msgpack.unpackb(self.__retrieve_raw_record(attr)))
-        if not type(field_value) == record_field.field_type:
+        if type(field_value) != record_field.field_type:
             raise TypeError(f"Decoded record was type {type(field_value)}; expected {record_field.field_type}")
         return field_value
 

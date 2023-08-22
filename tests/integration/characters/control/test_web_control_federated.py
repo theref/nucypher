@@ -128,7 +128,9 @@ def test_alice_character_control_revoke(alice_web_controller_test_client, federa
         'bob_verifying_key': bytes(federated_bob.stamp).hex()
     }
 
-    response = alice_web_controller_test_client.delete(f'/revoke', data=json.dumps(revoke_request_data))
+    response = alice_web_controller_test_client.delete(
+        '/revoke', data=json.dumps(revoke_request_data)
+    )
     assert response.status_code == 200
 
     response_data = json.loads(response.data)
@@ -213,12 +215,11 @@ def test_bob_web_character_control_retrieve_multiple_kits(bob_web_controller_tes
     method_name, params = retrieve_control_request
     multiple_kits_params = dict(params)
 
-    message_kits = []
     # capsule_side_channel has module scope so resetting - weird: resetting produces a message kit...ok(?)
     reset_message_kit, _ = capsule_side_channel.reset(plaintext_passthrough=True)
-    message_kits.append(b64encode(bytes(reset_message_kit)).decode())  # add initial message kit
+    message_kits = [b64encode(bytes(reset_message_kit)).decode()]
     # add some more
-    for index in range(1, 5):
+    for _ in range(1, 5):
         message_kit = capsule_side_channel()
         message_kits.append(b64encode(bytes(message_kit)).decode())
 

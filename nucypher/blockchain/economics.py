@@ -137,6 +137,4 @@ class EconomicsFactory:
         economics_parameters = dict(min_authorization=min_authorization,
                                     min_operator_seconds=min_operator_seconds)
 
-        economics = Economics(**economics_parameters)
-
-        return economics
+        return Economics(**economics_parameters)

@@ -90,7 +90,7 @@ def _request_from_node(teacher,
     if not client:
         client = NucypherMiddlewareClient()
     try:
-        response = client.get(node_or_sprout=teacher, path=f"ping", timeout=timeout)  # TLS certificate logic within
+        response = client.get(node_or_sprout=teacher, path="ping", timeout=timeout)
     except RestMiddleware.UnexpectedResponse:
         # 404, 405, 500, All server response codes handled by will be caught here.
         return  # Default teacher does not support this request - just move on.
@@ -172,8 +172,7 @@ def get_external_ip_from_known_nodes(known_nodes: FleetSensor,
     sample = random.sample(list(known_nodes), sample_size)
     client = NucypherMiddlewareClient()
     for node in sample:
-        ip = _request_from_node(teacher=node, client=client)
-        if ip:
+        if ip := _request_from_node(teacher=node, client=client):
             log.info(f'Fetched external IP address ({ip}) from randomly selected known nodes.')
             return ip
 

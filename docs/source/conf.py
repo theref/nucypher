@@ -229,20 +229,17 @@ def run_apidoc(_):
     nucypher_module_dir = source_dir.parent.parent
 
     # Command: sphinx-apidoc [OPTIONS] -o <OUTPUT_PATH> <MODULE_PATH> [EXCLUDE_PATTERN …]
-    apidoc_command = []
-
-    # ---- execution options/paths ----
-    apidoc_command.extend(['-fME',
-                           '-t', f'{source_dir / "apidoc"}',
-                           '-o', f'{source_dir / "api"}',
-                           '-H', 'Python API',
-                           f'{nucypher_module_dir}'])
-
-    # ---- exclusion patterns (*must be last to be added*) ----
-    # general patterns
-    apidoc_command.extend([
+    apidoc_command = [
+        '-fME',
+        '-t',
+        f'{source_dir / "apidoc"}',
+        '-o',
+        f'{source_dir / "api"}',
+        '-H',
+        'Python API',
+        f'{nucypher_module_dir}',
         '*conftest*',
-    ])
+    ]
 
     # files/folders relative to `nucypher` project directory (results in required absolute paths)
     exclusion_items = [
@@ -254,9 +251,10 @@ def run_apidoc(_):
         Path('nucypher', 'blockchain', 'eth', 'economics.py'),
         Path('nucypher', 'cli')
     ]
-    for exclusion_item in exclusion_items:
-        apidoc_command.append(f'{nucypher_module_dir / exclusion_item}')
-
+    apidoc_command.extend(
+        f'{nucypher_module_dir / exclusion_item}'
+        for exclusion_item in exclusion_items
+    )
     # ---- execute command ----
     apidoc.main(apidoc_command)
 

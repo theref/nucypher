@@ -64,7 +64,7 @@ def _list():
     if not card_filepaths:
         emitter.error(f'No cards found at {Card.CARD_DIR}.  '
                       f"To create one run 'nucypher {contacts.name} {create.name}'.")
-    cards = list()
+    cards = []
     for filename in card_filepaths:
         card = Card.load(filepath=Card.CARD_DIR / filename)
         cards.append(card)
@@ -83,7 +83,9 @@ def create(character_flag, verifying_key, encrypting_key, nickname, force):
 
     # Validate
     if not all((character_flag, verifying_key, encrypting_key)) and force:
-        emitter.error(f'--verifying-key, --encrypting-key, and --type are required with --force enabled.')
+        emitter.error(
+            '--verifying-key, --encrypting-key, and --type are required with --force enabled.'
+        )
 
     # Card type
     from constant_sorrow.constants import ALICE, BOB
@@ -145,4 +147,4 @@ def import_card(filepath):
     emitter = StdoutEmitter()
     shutil.copy(filepath, Card.CARD_DIR)
     # paint_single_card(card=card)
-    emitter.message(f'Successfully imported card.')
+    emitter.message('Successfully imported card.')

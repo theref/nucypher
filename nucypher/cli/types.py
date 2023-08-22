@@ -109,24 +109,23 @@ class NuCypherNetworkName(click.ParamType):
     name = 'nucypher_network_name'
 
     def __init__(self, validate: bool = True):
-        self.validate = bool(validate)
+        self.validate = validate
 
     def convert(self, value, param, ctx):
-        if self.validate:
-            network = str(value).lower()
-            if network not in NetworksInventory.NETWORKS:
-                self.fail(f"'{value}' is not a NuCypher Network. Valid options are: {list(NetworksInventory.NETWORKS)}")
-            else:
-                return network
-        else:
+        if not self.validate:
             return value
+        network = str(value).lower()
+        if network not in NetworksInventory.NETWORKS:
+            self.fail(f"'{value}' is not a NuCypher Network. Valid options are: {list(NetworksInventory.NETWORKS)}")
+        else:
+            return network
 
 
 class UmbralPublicKeyHex(click.ParamType):
     name = 'nucypher_umbral_public_key'
 
     def __init__(self, validate: bool = True):
-        self.validate = bool(validate)
+        self.validate = validate
 
     def convert(self, value, param, ctx):
         if self.validate:

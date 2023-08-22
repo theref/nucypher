@@ -47,8 +47,8 @@ def test_alice_rpc_character_control_create_policy(alice_rpc_test_client, create
     assert response.error_code == -32600
 
     # Send a bulk create policy request
-    bulk_request = list()
-    for i in range(50):
+    bulk_request = []
+    for _ in range(50):
         request_data = {'method': method_name, 'params': params}
         bulk_request.append(request_data)
 

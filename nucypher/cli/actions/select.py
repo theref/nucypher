@@ -84,15 +84,14 @@ def select_client_account(emitter,
         testnet = network != NetworksInventory.MAINNET
         signer = Signer.from_signer_uri(signer_uri, testnet=testnet)
 
-    # Display accounts info
-    if show_nu_balance or show_staking:  # Lazy registry fetching
+    if show_nu_balance or show_staking:
         if not registry:
             if not network:
                 raise ValueError("Pass network name or registry; Got neither.")
             registry = InMemoryContractRegistry.from_latest_publication(network=network)
 
     enumerated_accounts = dict(enumerate(signer.accounts))
-    if len(enumerated_accounts) < 1:
+    if not enumerated_accounts:
         emitter.echo(NO_ETH_ACCOUNTS, color='red', bold=True)
         raise click.Abort()
     elif len(enumerated_accounts) == 1:
@@ -108,7 +107,7 @@ def select_client_account(emitter,
     if show_nu_balance:
         headers.append('NU')
 
-    rows = list()
+    rows = []
     for index, account in enumerated_accounts.items():
         row = [account]
         if show_staking:
@@ -142,8 +141,7 @@ def select_network(emitter: StdoutEmitter, message: Optional[str] = None) -> str
     rows = [[n] for n in NetworksInventory.NETWORKS]
     emitter.echo(tabulate(rows, showindex='always'))
     choice = click.prompt(SELECT_NETWORK, default=0, type=click.IntRange(0, len(NetworksInventory.NETWORKS)-1))
-    network = NetworksInventory.NETWORKS[choice]
-    return network
+    return NetworksInventory.NETWORKS[choice]
 
 
 def select_config_file(emitter: StdoutEmitter,
@@ -178,8 +176,8 @@ def select_config_file(emitter: StdoutEmitter,
 
     checksum_address = checksum_address or os.environ.get(NUCYPHER_ENVVAR_OPERATOR_ADDRESS, None)  # TODO: Deprecate operator_address in favor of checksum_address
 
-    parsed_config_files = list()
-    parsed_addresses_and_filenames = list()
+    parsed_config_files = []
+    parsed_addresses_and_filenames = []
     # parse configuration files for checksum address values
     for fp in config_files:
         try:

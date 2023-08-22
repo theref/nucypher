@@ -15,6 +15,7 @@
  along with nucypher.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 # Get an interactive Python session with all the NuCypher agents loaded by running:
 #    python -i scripts/hooks/nucypher_agents.py <NETWORK> <ETH_PROVIDER_URI>
 
@@ -66,5 +67,5 @@ token_agent = ContractAgency.get_agent(agent_class=NucypherTokenAgent, registry=
 application_agent = ContractAgency.get_agent(agent_class=PREApplicationAgent, registry=registry)  # type: PREApplicationAgent
 subscription_agent = ContractAgency.get_agent(agent_class=SubscriptionManagerAgent, registry=registry)  # type: SubscriptionManagerAgent
 
-message = f"NuCypher agents pre-loaded in variables 'token_agent', 'subscription_agent' and 'application_agent'"
+message = "NuCypher agents pre-loaded in variables 'token_agent', 'subscription_agent' and 'application_agent'"
 emitter.echo(message=message, color='green')

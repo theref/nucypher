@@ -65,23 +65,17 @@ class TestRPCResponse:
 
     @property
     def error_code(self):
-        if self.error:
-            return int(self.data['error']['code'])
-        else:
-            return 0
+        return int(self.data['error']['code']) if self.error else 0
 
     @property
     def content(self):
-        if self.success:
-            return self.data['result']
-        else:
-            return self.data['error']
+        return self.data['result'] if self.success else self.data['error']
 
     @classmethod
     def from_string(cls, response_line: str):
         outgoing_responses = response_line.strip(cls.delimiter).split(cls.delimiter)
 
-        responses = list()
+        responses = []
         for response in outgoing_responses:
             # Deserialize
             response_data = json.loads(response)
@@ -105,7 +99,7 @@ class TestRPCResponse:
 
         # handle one or many requests
         final_response = responses
-        if not len(responses) > 1:
+        if len(responses) <= 1:
             final_response = responses[0]
 
         return final_response
@@ -130,20 +124,19 @@ class JSONRPCTestClient:
         """Assemble a JSONRPC2.0 formatted dict for JSON use."""
         JSONRPCTestClient.MESSAGE_ID += 1
         method, params = request['method'], request['params']
-        response_data = {'jsonrpc': '2.0',
-                         'id': str(JSONRPCTestClient.MESSAGE_ID),
-                         'method': method,
-                         'params': params}
-
-        return response_data
+        return {
+            'jsonrpc': '2.0',
+            'id': str(JSONRPCTestClient.MESSAGE_ID),
+            'method': method,
+            'params': params,
+        }
 
     def receive(self, size: int):
         current_cursor_position = self.__io.tell()
         cursor_position = current_cursor_position - size
         self.__io.seek(cursor_position)
         stdout = self.__io.read(size)
-        response = TestRPCResponse.from_string(response_line=stdout)
-        return response
+        return TestRPCResponse.from_string(response_line=stdout)
 
     def send(self, request: Union[dict, list], malformed: bool = False) -> TestRPCResponse:
 
@@ -159,12 +152,12 @@ class JSONRPCTestClient:
             if isinstance(request, dict):
                 requests = [request]
 
-            payload = list()
+            payload = []
             for r in requests:
                 assembled_request = self.assemble_request(request=r)
                 payload.append(assembled_request)
 
-            if not len(payload) > 1:
+            if len(payload) <= 1:
                 payload = payload[0]
 
             payload = json.dumps(payload)

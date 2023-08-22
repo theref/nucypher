@@ -35,15 +35,11 @@ def to_32byte_hex(value=None, hexstr=None) -> str:
 def get_mapping_entry_location(key: bytes, mapping_location: int) -> int:
     if not(isinstance(key, bytes) and len(key) == 32):
         raise ValueError("Mapping key must be a 32-long bytestring")
-    # See https://solidity.readthedocs.io/en/latest/internals/layout_in_storage.html#mappings-and-dynamic-arrays
-    entry_location = Web3.toInt(Web3.keccak(key + mapping_location.to_bytes(32, "big")))
-    return entry_location
+    return Web3.toInt(Web3.keccak(key + mapping_location.to_bytes(32, "big")))
 
 
 def get_array_data_location(array_location: int) -> int:
-    # See https://solidity.readthedocs.io/en/latest/internals/layout_in_storage.html#mappings-and-dynamic-arrays
-    data_location = Web3.toInt(Web3.keccak(to_bytes32(array_location)))
-    return data_location
+    return Web3.toInt(Web3.keccak(to_bytes32(array_location)))
 
 
 def encode_constructor_arguments(web3: Web3,
@@ -54,13 +50,11 @@ def encode_constructor_arguments(web3: Web3,
     of the constructor arguments, following the standard ABI encoding conventions.
     If there's no constructor, it returns None.
     """
-    constructor_abi = get_constructor_abi(constructor_function.abi)
-    if constructor_abi:
+    if constructor_abi := get_constructor_abi(constructor_function.abi):
         arguments = merge_args_and_kwargs(constructor_abi, constructor_args, constructor_kwargs)
-        data = encode_abi(web3, constructor_abi, arguments)
+        return encode_abi(web3, constructor_abi, arguments)
     else:
-        data = None
-    return data
+        return None
 
 
 def connect_web3_provider(eth_provider_uri: str) -> None:

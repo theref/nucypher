@@ -38,15 +38,13 @@ def capture_output():
 
 @pytest.fixture(scope='module')
 def ursula(federated_ursulas):
-    ursula = federated_ursulas.pop()
-    return ursula
+    return federated_ursulas.pop()
 
 
 @pytest.fixture(scope='module')
 def protocol(ursula):
     emitter = StdoutEmitter()
-    protocol = UrsulaCommandProtocol(ursula=ursula, emitter=emitter)
-    return protocol
+    return UrsulaCommandProtocol(ursula=ursula, emitter=emitter)
 
 
 def test_ursula_command_protocol_creation(ursula):
@@ -59,6 +57,7 @@ def test_ursula_command_protocol_creation(ursula):
 
 
 def test_ursula_command_help(protocol, ursula):
+
 
     class FakeTransport:
         """This is a transport"""
@@ -81,7 +80,7 @@ def test_ursula_command_help(protocol, ursula):
     result = out.getvalue()
     assert "Invalid input" in result
     for command in commands:
-        assert command in result, '{} is missing from help text'.format(command)
+        assert command in result, f'{command} is missing from help text'
     for command in protocol._hidden_commands:
         assert command not in result, f'Hidden command {command} in help text'
 
@@ -92,7 +91,7 @@ def test_ursula_command_help(protocol, ursula):
     result = out.getvalue()
     assert "Invalid input" not in result
     for command in commands:
-        assert command in result, '{} is missing from help text'.format(command)
+        assert command in result, f'{command} is missing from help text'
     for command in protocol._hidden_commands:
         assert command not in result, f'Hidden command {command} in help text'
 

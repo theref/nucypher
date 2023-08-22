@@ -35,7 +35,7 @@ def collect_sources(source_bundle: SourceBundle) -> Dict[str, Path]:
     Combines sources bundle paths. Walks source_dir top-down to the bottom filepath of
     each subdirectory recursively nd filtrates by __source_filter, setting values into `source_paths`.
     """
-    source_paths = dict()
+    source_paths = {}
     combined_paths = (source_bundle.base_path, *source_bundle.other_paths)
     for source_dir in combined_paths:
         source_walker: Iterator = os.walk(top=source_dir, topdown=True)

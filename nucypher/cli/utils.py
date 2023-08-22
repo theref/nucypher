@@ -91,7 +91,7 @@ def make_cli_character(character_config,
 
     # Handle Teachers
     # TODO: Is this still relevant?  Is it better to DRY this up by doing it later?
-    sage_nodes = list()
+    sage_nodes = []
 
     #
     # Character Init
@@ -166,11 +166,11 @@ def establish_deployer_registry(emitter,
 
 
 def get_registry(network: str, registry_filepath: Optional[Path] = None) -> BaseContractRegistry:
-    if registry_filepath:
-        registry = LocalContractRegistry(filepath=registry_filepath)
-    else:
-        registry = InMemoryContractRegistry.from_latest_publication(network=network)
-    return registry
+    return (
+        LocalContractRegistry(filepath=registry_filepath)
+        if registry_filepath
+        else InMemoryContractRegistry.from_latest_publication(network=network)
+    )
 
 
 def connect_to_blockchain(emitter: StdoutEmitter,
@@ -185,8 +185,9 @@ def connect_to_blockchain(emitter: StdoutEmitter,
                                                             light=light,
                                                             emitter=emitter)
         emitter.echo(message=CONNECTING_TO_BLOCKCHAIN)
-        blockchain = BlockchainInterfaceFactory.get_interface(eth_provider_uri=eth_provider_uri)
-        return blockchain
+        return BlockchainInterfaceFactory.get_interface(
+            eth_provider_uri=eth_provider_uri
+        )
     except Exception as e:
         if debug:
             raise
@@ -214,12 +215,7 @@ def initialize_deployer_interface(emitter: StdoutEmitter,
 
 
 def get_env_bool(var_name: str, default: bool) -> bool:
-    if var_name in os.environ:
-        # TODO: which is better: to fail on an incorrect envvar, or to use the default?
-        # Currently doing the former.
-        return strtobool(os.environ[var_name])
-    else:
-        return default
+    return strtobool(os.environ[var_name]) if var_name in os.environ else default
 
 
 def ensure_config_root(config_root: Path) -> None:
@@ -244,7 +240,7 @@ def parse_event_filters_into_argument_filters(event_filters: Tuple[str]) -> Dict
     of filter_name (key) -> filter_value (value) entries. Filter values can only be strings, but if the filter
     value can be converted to an int, then it is converted, otherwise it remains a string.
     """
-    argument_filters = dict()
+    argument_filters = {}
     for event_filter in event_filters:
         event_filter_split = event_filter.split('=')
         if len(event_filter_split) != 2:
@@ -268,13 +264,14 @@ def retrieve_events(emitter: StdoutEmitter,
     if csv_output_file:
         if csv_output_file.exists():
             click.confirm(CONFIRM_OVERWRITE_EVENTS_CSV_FILE.format(csv_file=csv_output_file), abort=True)
-        available_events = write_events_to_csv_file(csv_file=csv_output_file,
-                                                    agent=agent,
-                                                    event_name=event_name,
-                                                    from_block=from_block,
-                                                    to_block=to_block,
-                                                    argument_filters=argument_filters)
-        if available_events:
+        if available_events := write_events_to_csv_file(
+            csv_file=csv_output_file,
+            agent=agent,
+            event_name=event_name,
+            from_block=from_block,
+            to_block=to_block,
+            argument_filters=argument_filters,
+        ):
             emitter.echo(f"{agent.contract_name}::{event_name} events written to {csv_output_file}",
                          bold=True,
                          color='green')

@@ -364,8 +364,6 @@ def upgrade(general_config, actor_options, retarget, target_address, ignore_depl
         message = SUCCESSFUL_RETARGET.format(contract_name=contract_name, target_address=target_address)
         emitter.message(message, color='green')
         paint_receipt_summary(emitter=emitter, receipt=receipt)
-        return  # Exit
-
     else:
         github_registry = establish_deployer_registry(emitter=emitter,
                                                       download_registry=True,
@@ -391,7 +389,8 @@ def upgrade(general_config, actor_options, retarget, target_address, ignore_depl
                                                       local_registry=local_registry,
                                                       network=actor_options.network), color='blue')
         emitter.echo(ETHERSCAN_VERIFY_HINT.format(solc_version=SOLIDITY_COMPILER_VERSION), color='blue')
-        return  # Exit
+
+    return  # Exit
 
 
 @deploy.command()

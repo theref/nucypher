@@ -52,10 +52,10 @@ def _get_keys(file, key_class):
 
     with open(file) as f:
         stored_keys = json.load(f)
-    keys = dict()
-    for key_type, key_str in stored_keys.items():
-        keys[key_type] = key_class.from_bytes(bytes.fromhex(key_str))
-    return keys
+    return {
+        key_type: key_class.from_bytes(bytes.fromhex(key_str))
+        for key_type, key_str in stored_keys.items()
+    }
 
 
 def get_doctor_pubkeys():

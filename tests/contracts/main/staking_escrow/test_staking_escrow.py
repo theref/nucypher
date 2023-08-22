@@ -33,7 +33,7 @@ def test_staking_from_worklock(testerchain, token, worklock, escrow):
     Tests for staking method: depositFromWorkLock
     """
 
-    creator, staker1, staker2, staker3 = testerchain.client.accounts[0:4]
+    creator, staker1, staker2, staker3 = testerchain.client.accounts[:4]
     deposit_log = escrow.events.Deposited.createFilter(fromBlock='latest')
 
     # Give WorkLock and Staker some coins
@@ -177,7 +177,12 @@ def test_slashing(testerchain, token, worklock, threshold_staking, escrow):
 
 
 def test_request_merge(testerchain, threshold_staking, escrow):
-    staker1, staker2, staking_provider_1, staking_provider_2 = testerchain.client.accounts[0:4]
+    (
+        staker1,
+        staker2,
+        staking_provider_1,
+        staking_provider_2,
+    ) = testerchain.client.accounts[:4]
     merge_requests_log = escrow.events.MergeRequested.createFilter(fromBlock='latest')
 
     # Can't request merge directly
@@ -274,7 +279,7 @@ def test_request_merge(testerchain, threshold_staking, escrow):
 
 
 def test_withdraw(testerchain, token, worklock, threshold_staking, escrow):
-    creator, staker, staking_provider = testerchain.client.accounts[0:3]
+    creator, staker, staking_provider = testerchain.client.accounts[:3]
     withdrawal_log = escrow.events.Withdrawn.createFilter(fromBlock='latest')
 
     # Deposit some tokens
@@ -388,7 +393,7 @@ def test_withdraw(testerchain, token, worklock, threshold_staking, escrow):
 
 
 def test_vesting(testerchain, token, worklock, escrow):
-    creator, staker1, staker2, staker3, staker4 = testerchain.client.accounts[0:5]
+    creator, staker1, staker2, staker3, staker4 = testerchain.client.accounts[:5]
     vesting_log = escrow.events.VestingSet.createFilter(fromBlock='latest')
 
     value = NU(15_000, 'NU').to_units()

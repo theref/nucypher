@@ -73,7 +73,7 @@ class NucypherMiddlewareClient:
             if current_attempt == retry_attempts:
                 message = f"No Response from {host}:{port} after {retry_attempts} attempts"
                 SSL_LOGGER.info(message)
-                raise ConnectionRefusedError("No response from {}:{}".format(host, port))
+                raise ConnectionRefusedError(f"No response from {host}:{port}")
             SSL_LOGGER.info(f"No Response from {host}:{port}. Retrying in {retry_rate} seconds...")
             time.sleep(retry_rate)
             return self.get_certificate(host, port, timeout, retry_attempts, retry_rate, current_attempt + 1)
@@ -116,8 +116,7 @@ class NucypherMiddlewareClient:
         if not kwargs.get("timeout"):
             if self.timeout:
                 kwargs["timeout"] = self.timeout
-        response = method(url, *args, **kwargs)
-        return response
+        return method(url, *args, **kwargs)
 
     def clean_params(self, request_kwargs):
         """
@@ -227,34 +226,28 @@ class RestMiddleware:
         self.client = self._client_class(registry=registry, eth_provider_uri=eth_provider_uri)
 
     def request_revocation(self, ursula, revocation):
-        # TODO: Implement offchain revocation #2787
-        response = self.client.post(
-            node_or_sprout=ursula,
-            path=f"revoke",
-            data=bytes(revocation),
+        return self.client.post(
+            node_or_sprout=ursula, path="revoke", data=bytes(revocation)
         )
-        return response
 
     def reencrypt(self, ursula: 'Ursula', reencryption_request_bytes: bytes):
-        response = self.client.post(
+        return self.client.post(
             node_or_sprout=ursula,
-            path=f"reencrypt",
+            path="reencrypt",
             data=reencryption_request_bytes,
-            timeout=2
+            timeout=2,
         )
-        return response
 
     def check_availability(self, initiator, responder):
-        response = self.client.post(node_or_sprout=responder,
-                                    data=bytes(initiator.metatada()),
-                                    path="check_availability",
-                                    timeout=6,  # Two round trips are expected
-                                    )
-        return response
+        return self.client.post(
+            node_or_sprout=responder,
+            data=bytes(initiator.metatada()),
+            path="check_availability",
+            timeout=6,  # Two round trips are expected
+        )
 
     def ping(self, node):
-        response = self.client.get(node_or_sprout=node, path="ping", timeout=2)
-        return response
+        return self.client.get(node_or_sprout=node, path="ping", timeout=2)
 
     def get_nodes_via_rest(self,
                            node,
@@ -263,8 +256,8 @@ class RestMiddleware:
 
         request = MetadataRequest(fleet_state_checksum=fleet_state_checksum,
                                   announce_nodes=announce_nodes)
-        response = self.client.post(node_or_sprout=node,
-                                    path="node_metadata",
-                                    data=bytes(request),
-                                    )
-        return response
+        return self.client.post(
+            node_or_sprout=node,
+            path="node_metadata",
+            data=bytes(request),
+        )

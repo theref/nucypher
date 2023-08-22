@@ -73,7 +73,7 @@ class ProxyRESTServer:
         self.__hosting_power = hosting_power
 
     def rest_url(self):
-        return "{}:{}".format(self.rest_interface.host, self.rest_interface.port)
+        return f"{self.rest_interface.host}:{self.rest_interface.port}"
 
 
 def make_rest_app(
@@ -93,7 +93,7 @@ def make_rest_app(
     # but `rest_app` somehow holds a reference to itself, Uroboros-like,
     # and will hold the datastore reference if it is created there.
 
-    log.info("Starting datastore {}".format(db_filepath))
+    log.info(f"Starting datastore {db_filepath}")
     datastore = Datastore(db_filepath)
     rest_app = _make_rest_app(weakref.proxy(datastore), weakref.proxy(this_node), log)
 

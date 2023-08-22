@@ -91,13 +91,15 @@ class RetrievalPlan:
         """
         while self._ursulas_pick_order:
             ursula_address = self._ursulas_pick_order.pop(0)
-            # Only request reencryption for capsules that:
-            # - haven't been processed by this Ursula
-            # - don't already have cfrags from `threshold` Ursulas
-            capsules = [capsule for capsule in self._capsules
-                        if (capsule not in self._processed_capsules.get(ursula_address, set())
-                            and len(self._queried_addresses[capsule]) < self._threshold)]
-            if len(capsules) > 0:
+            if capsules := [
+                capsule
+                for capsule in self._capsules
+                if (
+                    capsule
+                    not in self._processed_capsules.get(ursula_address, set())
+                    and len(self._queried_addresses[capsule]) < self._threshold
+                )
+            ]:
                 return RetrievalWorkOrder(ursula_address=ursula_address,
                                           capsules=capsules)
 
@@ -244,8 +246,7 @@ class RetrievalClient:
             self.log.warn(message)
             raise RuntimeError(message)
 
-        return {capsule: vcfrag for capsule, vcfrag
-                in zip(reencryption_request.capsules, verified_cfrags)}
+        return dict(zip(reencryption_request.capsules, verified_cfrags))
 
     def retrieve_cfrags(
             self,

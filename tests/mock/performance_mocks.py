@@ -55,8 +55,7 @@ class NotAPublicKey:
     _umbral_pubkey_from_bytes = PublicKey.from_bytes
 
     def _tick():
-        for serial in good_serials:
-            yield serial
+        yield from good_serials
     tick = _tick()
 
     def __init__(self, serial=None):

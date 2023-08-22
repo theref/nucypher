@@ -158,26 +158,25 @@ def staking_providers(general_config, registry_options, staking_provider_address
 def events(general_config, registry_options, contract_name, from_block, to_block, event_name, csv, csv_file, event_filters, legacy):
     """Show events associated with NuCypher contracts."""
 
-    if csv or csv_file:
-        if csv and csv_file:
-            raise click.BadOptionUsage(option_name='--event-filter',
-                                       message=f'Pass either --csv or --csv-file, not both.')
+    if csv and csv_file:
+        raise click.BadOptionUsage(
+            option_name='--event-filter',
+            message='Pass either --csv or --csv-file, not both.',
+        )
 
-        # ensure that event name is specified - different events would have different columns in the csv file
-        if csv_file and not all((event_name, contract_name)):
-            # TODO consider a single csv that just gets appended to for each event
-            #  - each appended event adds their column names first
-            #  - single report-type functionality, see #2561
-            raise click.BadOptionUsage(option_name='--csv-file, --event-name, --contract_name',
-                                       message='--event-name and --contract-name must be specified when outputting to '
-                                               'specific file using --csv-file; alternatively use --csv')
-    if not contract_name:
-        if event_name:
-            raise click.BadOptionUsage(option_name='--event-name', message='--event-name requires --contract-name')
-        # FIXME should we force a contract name to be specified?
-    else:
+    # ensure that event name is specified - different events would have different columns in the csv file
+    if csv_file and not all((event_name, contract_name)):
+        # TODO consider a single csv that just gets appended to for each event
+        #  - each appended event adds their column names first
+        #  - single report-type functionality, see #2561
+        raise click.BadOptionUsage(option_name='--csv-file, --event-name, --contract_name',
+                                   message='--event-name and --contract-name must be specified when outputting to '
+                                           'specific file using --csv-file; alternatively use --csv')
+    if contract_name:
         contract_names = [contract_name]
 
+    elif event_name:
+        raise click.BadOptionUsage(option_name='--event-name', message='--event-name requires --contract-name')
     emitter, registry, blockchain = registry_options.setup(general_config=general_config)
 
     if from_block is None:
@@ -186,12 +185,10 @@ def events(general_config, registry_options, contract_name, from_block, to_block
         from_block = blockchain.client.block_number - blocks_since_yesterday_kinda
     if to_block is None:
         to_block = 'latest'
-    else:
-        # validate block range
-        if from_block > to_block:
-            raise click.BadOptionUsage(option_name='--to-block, --from-block',
-                                       message=f'Invalid block range provided, '
-                                               f'from-block ({from_block}) > to-block ({to_block})')
+    elif from_block > to_block:
+        raise click.BadOptionUsage(option_name='--to-block, --from-block',
+                                   message=f'Invalid block range provided, '
+                                           f'from-block ({from_block}) > to-block ({to_block})')
 
     # event argument filters
     argument_filters = None
@@ -237,7 +234,7 @@ def events(general_config, registry_options, contract_name, from_block, to_block
         for name in names:
             # csv output file - one per (contract_name, event_name) pair
             csv_output_file = csv_file
-            if csv or csv_output_file:
+            if csv:
                 if not csv_output_file:
                     csv_output_file = generate_events_csv_filepath(contract_name=agent.contract_name, event_name=name)
 

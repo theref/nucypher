@@ -60,14 +60,12 @@ def derive_key_material_from_password(password: bytes, salt: bytes) -> bytes:
             backend=default_backend()
         ).derive(password)
     except InternalError as e:
-        required_memory = 128 * 2**_scrypt_cost * 8 // (10**6)
-        if e.err_code[0].reason == 65:
-            raise MemoryError(
-                "Scrypt key derivation requires at least {} MB of memory. "
-                "Please free up some memory and try again.".format(required_memory)
-            )
-        else:
+        if e.err_code[0].reason != 65:
             raise e
+        required_memory = 128 * 2**_scrypt_cost * 8 // (10**6)
+        raise MemoryError(
+            f"Scrypt key derivation requires at least {required_memory} MB of memory. Please free up some memory and try again."
+        )
     else:
         return derived_key
 
@@ -77,14 +75,13 @@ def derive_wrapping_key_from_key_material(key_material: bytes, salt: bytes) -> b
     Uses HKDF to derive a 32 byte wrapping key to encrypt key material with.
     """
 
-    wrapping_key = HKDF(
+    return HKDF(
         algorithm=__HKDF_HASH_ALGORITHM,
         length=__WRAPPING_KEY_LENGTH,
         salt=salt,
         info=__WRAPPING_KEY_INFO,
-        backend=default_backend()
+        backend=default_backend(),
     ).derive(key_material)
-    return wrapping_key
 
 
 class SecretBoxAuthenticationError(Exception):
@@ -94,8 +91,7 @@ class SecretBoxAuthenticationError(Exception):
 def secret_box_encrypt(key_material: bytes, salt: bytes, plaintext: bytes) -> bytes:
     wrapping_key = derive_wrapping_key_from_key_material(key_material, salt)
     secret_box = SecretBox(wrapping_key)
-    ciphertext = secret_box.encrypt(plaintext)
-    return ciphertext
+    return secret_box.encrypt(plaintext)
 
 
 def secret_box_decrypt(key_material: bytes, salt: bytes, ciphertext: bytes) -> bytes:

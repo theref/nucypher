@@ -63,8 +63,7 @@ class MockSideChannel:
 
     def fetch_message_kit(self) -> MessageKit:
         if self.__message_kits:
-            message_kit = self.__message_kits.pop()
-            return message_kit
+            return self.__message_kits.pop()
         raise self.NoMessageKits
 
     def save_policy(self, policy: PolicyAndLabel):
@@ -72,30 +71,26 @@ class MockSideChannel:
 
     def fetch_policy(self) -> PolicyAndLabel:
         if self.__policies:
-            policy = self.__policies[0]
-            return policy
+            return self.__policies[0]
         raise self.NoPolicies
 
     def save_alice_pubkey(self, public_key):
         self.__alice_public_keys.append(public_key)
 
     def fetch_alice_pubkey(self):
-        policy = self.__alice_public_keys.pop()
-        return policy
+        return self.__alice_public_keys.pop()
 
     def save_bob_public_keys(self, public_keys: BobPublicKeys):
         self.__bob_public_keys.append(public_keys)
 
     def fetch_bob_public_keys(self) -> BobPublicKeys:
-        policy = self.__bob_public_keys.pop()
-        return policy
+        return self.__bob_public_keys.pop()
 
     def save_treasure_map(self, treasure_map: EncryptedTreasureMap):
         self.__treasure_map.append(treasure_map)
 
     def fetch_treasure_map(self) -> EncryptedTreasureMap:
-        tmap = self.__treasure_map.pop()
-        return tmap
+        return self.__treasure_map.pop()
 
 
 def run_entire_cli_lifecycle(click_runner,
@@ -273,8 +268,9 @@ def run_entire_cli_lifecycle(click_runner,
         if federated:
             decrypt_args += ('--federated-only',)
 
-        decrypt_response_fail = click_runner.invoke(nucypher_cli, decrypt_args[0:7], catch_exceptions=False,
-                                                    env=envvars)
+        decrypt_response_fail = click_runner.invoke(
+            nucypher_cli, decrypt_args[:7], catch_exceptions=False, env=envvars
+        )
         assert decrypt_response_fail.exit_code == 2
 
         decrypt_response = click_runner.invoke(nucypher_cli, decrypt_args, catch_exceptions=False, env=envvars)
@@ -291,11 +287,7 @@ def run_entire_cli_lifecycle(click_runner,
     Scene 5: Alice grants access to Bob:
     We catch up with Alice later on, but before she has learned about existing Ursulas...
     """
-    if federated:
-        teacher = list(ursulas)[0]
-    else:
-        teacher = list(ursulas)[1]
-
+    teacher = list(ursulas)[0] if federated else list(ursulas)[1]
     teacher_uri = teacher.seed_node_metadata(as_teacher_uri=True)
 
     # Some Ursula is running somewhere

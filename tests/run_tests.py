@@ -32,7 +32,7 @@ class NucypherPytestRunner:
     def pytest_sessionfinish(self):
         duration = maya.now() - self.start_time
         print("*** Nucypher Test Run Report ***")
-        print("""Run Duration ... {}""".format(duration))
+        print(f"""Run Duration ... {duration}""")
 
 
 def run():

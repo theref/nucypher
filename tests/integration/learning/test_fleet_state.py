@@ -142,12 +142,3 @@ def test_teacher_records_new_fleet_state_upon_hearing_about_new_node(federated_u
 
     # TODO #2568: some kind of a timeout is required here to wait for the learning to end
     return
-
-    # `some_ursula_in_the_fleet` learned about `lonely_learner`
-    assert states_before + 1 == states_after
-
-    # The current fleet state of the Teacher...
-    teacher_fleet_state_checksum = some_ursula_in_the_fleet.known_nodes.checksum
-
-    # ...is the same as the learner, because both have learned about everybody at this point.
-    assert teacher_fleet_state_checksum == states[-1].checksum

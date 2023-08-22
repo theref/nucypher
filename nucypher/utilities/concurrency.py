@@ -79,15 +79,14 @@ class Future:
     def get(self):
         self._set_event.wait()
 
-        if self._value.exc_info is not None:
-            (exc_type, exc_value, exc_traceback) = self._value.exc_info
-            if exc_value is None:
-                exc_value = exc_type()
-            if exc_value.__traceback__ is not exc_traceback:
-                raise exc_value.with_traceback(exc_traceback)
-            raise exc_value
-        else:
+        if self._value.exc_info is None:
             return self._value.value
+        (exc_type, exc_value, exc_traceback) = self._value.exc_info
+        if exc_value is None:
+            exc_value = exc_type()
+        if exc_value.__traceback__ is not exc_traceback:
+            raise exc_value.with_traceback(exc_traceback)
+        raise exc_value
 
 
 class WorkerPoolException(Exception):

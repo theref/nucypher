@@ -90,7 +90,7 @@ def test_create_alice_card_interactive(click_runner, alice_verifying_key, alice_
         alice_nickname        # Nickname
     )
     user_input = '\n'.join(user_input)
-    assert len(list(Card.CARD_DIR.iterdir())) == 0
+    assert not list(Card.CARD_DIR.iterdir())
 
     # Let's play pretend: this alice does not have the card directory (yet)
     mocker.patch('pathlib.Path.is_dir', return_value=False)

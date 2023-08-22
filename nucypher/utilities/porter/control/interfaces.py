@@ -41,8 +41,7 @@ class PorterInterface(ControlInterface):
                                                     exclude_ursulas=exclude_ursulas,
                                                     include_ursulas=include_ursulas)
 
-        response_data = {"ursulas": ursulas_info}
-        return response_data
+        return {"ursulas": ursulas_info}
 
     @attach_schema(porter_schema.AliceRevoke)
     def revoke(self) -> dict:
@@ -66,5 +65,4 @@ class PorterInterface(ControlInterface):
                                                              bob_encrypting_key=bob_encrypting_key,
                                                              bob_verifying_key=bob_verifying_key)
         results = retrieval_results   # list of RetrievalResult objects
-        response_data = {'retrieval_results': results}
-        return response_data
+        return {'retrieval_results': results}

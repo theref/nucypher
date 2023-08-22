@@ -102,7 +102,7 @@ def test_interactive_select_config_file(test_emitter,
 
     # ... and then a bunch more
     accounts = list(mock_accounts.items())
-    filenames = dict()
+    filenames = {}
     for filename, account in accounts:
         config.checksum_address = account.address
         config_path = temp_dir_path / config.generate_filename(modifier=account.address)

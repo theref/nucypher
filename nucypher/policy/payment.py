@@ -160,20 +160,18 @@ class SubscriptionManagerPayment(ContractPayment):
 
     def verify(self, payee: ChecksumAddress, request: ReencryptionRequest) -> bool:
         """Verify policy payment by reading the SubscriptionManager contract"""
-        result = self.agent.is_policy_active(policy_id=bytes(request.hrac))
-        return result
+        return self.agent.is_policy_active(policy_id=bytes(request.hrac))
 
     def pay(self, policy: BlockchainPolicy) -> TxReceipt:
         """Writes a new policy to the SubscriptionManager contract."""
-        receipt = self.agent.create_policy(
-            value=policy.value,                   # wei
-            policy_id=bytes(policy.hrac),         # bytes16 _policyID
-            size=len(policy.kfrags),              # uint16
+        return self.agent.create_policy(
+            value=policy.value,  # wei
+            policy_id=bytes(policy.hrac),  # bytes16 _policyID
+            size=len(policy.kfrags),  # uint16
             start_timestamp=policy.commencement,  # uint16
-            end_timestamp=policy.expiration,      # uint16
-            transacting_power=policy.publisher.transacting_power
+            end_timestamp=policy.expiration,  # uint16
+            transacting_power=policy.publisher.transacting_power,
         )
-        return receipt
 
     @property
     def rate(self) -> Wei:
@@ -200,7 +198,7 @@ class SubscriptionManagerPayment(ContractPayment):
         if not any((duration, expiration, value)):
             raise ValueError("Policy end time must be specified with 'expiration', 'duration' or 'value'.")
         if sum(True for i in (commencement, expiration, duration, value, rate) if i is not None and i < 0) > 0:
-            raise ValueError(f"Negative policy parameters are not allowed. Be positive.")
+            raise ValueError("Negative policy parameters are not allowed. Be positive.")
 
         if not commencement:
             if expiration and duration:
@@ -212,15 +210,14 @@ class SubscriptionManagerPayment(ContractPayment):
             if expiration and commencement:
                 duration = expiration - commencement
 
-        q = self.Quote(
+        return self.Quote(
             rate=Wei(self.rate),
             value=Wei(self.rate * duration * shares),
             shares=shares,
             commencement=Timestamp(commencement),
             expiration=Timestamp(expiration),
-            duration=duration
+            duration=duration,
         )
-        return q
 
     def validate_price(self, value: Wei, duration: Wei, shares: int, *args, **kwargs) -> bool:
         expected_price = Wei(shares * duration * self.rate)

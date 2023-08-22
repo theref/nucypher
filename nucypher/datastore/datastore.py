@@ -218,7 +218,7 @@ class Datastore:
                 valid_records.add(record(writeable=writeable))
 
             # If after the iteration we have no records, we raise `RecordNotFound`
-            if len(valid_records) == 0:
+            if not valid_records:
                 raise RecordNotFound(f"No records exist for the key from the specified query parameters: '{query_key}'")
             # We begin the context manager try/finally block
             try:

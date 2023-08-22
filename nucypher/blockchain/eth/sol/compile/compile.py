@@ -38,7 +38,7 @@ CompilerSources = Dict[str, Dict[str, List[str]]]
 
 
 def prepare_source_configuration(sources: Dict[str, Path]) -> CompilerSources:
-    input_sources = dict()
+    input_sources = {}
     for source_name, path in sources.items():
         source_url = path.resolve(strict=True)  # require source path existence
         input_sources[source_name] = dict(urls=[str(source_url)])
@@ -46,11 +46,10 @@ def prepare_source_configuration(sources: Dict[str, Path]) -> CompilerSources:
 
 
 def prepare_remappings_configuration(base_path: Path) -> Dict:
-    remappings_array = list()
-    for i, value in enumerate(REMAPPINGS):
-        remappings_array.append(f"{value}={str(base_path / value)}")
-    remappings = dict(remappings=remappings_array)
-    return remappings
+    remappings_array = [
+        f"{value}={str(base_path / value)}" for value in REMAPPINGS
+    ]
+    return dict(remappings=remappings_array)
 
 
 def compile_sources(source_bundle: SourceBundle, version_check: bool = True) -> Dict:
@@ -64,19 +63,23 @@ def compile_sources(source_bundle: SourceBundle, version_check: bool = True) -> 
 
     version: VersionString = VersionString(SOLIDITY_COMPILER_VERSION) if version_check else None
     allow_paths = [source_bundle.base_path, *source_bundle.other_paths]
-    compiler_output = __execute(compiler_version=version, input_config=solc_configuration, allow_paths=allow_paths)
-    return compiler_output
+    return __execute(
+        compiler_version=version,
+        input_config=solc_configuration,
+        allow_paths=allow_paths,
+    )
 
 
 def multiversion_compile(source_bundles: List[SourceBundle],
                          compiler_version_check: bool = True
                          ) -> VersionedContractOutputs:
     """Compile contracts from `source_dirs` and aggregate the resulting source contract outputs by version"""
-    raw_compiler_results: List[CompiledContractOutputs] = list()
+    raw_compiler_results: List[CompiledContractOutputs] = []
     for bundle in source_bundles:
         compile_result = compile_sources(source_bundle=bundle,
                                          version_check=compiler_version_check)
         raw_compiler_results.append(compile_result['contracts'])
     raw_compiled_contracts = itertools.chain.from_iterable(output.values() for output in raw_compiler_results)
-    versioned_contract_outputs = VersionedContractOutputs(merge_with(merge_contract_outputs, *raw_compiled_contracts))
-    return versioned_contract_outputs
+    return VersionedContractOutputs(
+        merge_with(merge_contract_outputs, *raw_compiled_contracts)
+    )

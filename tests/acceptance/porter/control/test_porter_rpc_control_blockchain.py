@@ -27,8 +27,6 @@ from tests.utils.policy import retrieval_request_setup, retrieval_params_decode_
 
 def test_get_ursulas(blockchain_porter_rpc_controller, blockchain_ursulas):
     method = 'get_ursulas'
-    expected_response_id = 0
-
     quantity = 4
     blockchain_ursulas_list = list(blockchain_ursulas)
     include_ursulas = [blockchain_ursulas_list[0].checksum_address, blockchain_ursulas_list[1].checksum_address]
@@ -45,7 +43,7 @@ def test_get_ursulas(blockchain_porter_rpc_controller, blockchain_ursulas):
     #
     request_data = {'method': method, 'params': get_ursulas_params}
     response = blockchain_porter_rpc_controller.send(request_data)
-    expected_response_id += 1
+    expected_response_id = 0 + 1
     assert response.success
     # assert response.id == expected_response_id  # FIXME
     ursulas_info = response.data['result']['ursulas']

@@ -69,10 +69,7 @@ class AnsiblePlayBookResultsCollector(CallbackBase):
         if self.filter_output is not None:
             return
         name = play.get_name().strip()
-        if not name:
-            msg = '\nPLAY {}\n'.format('*' * 100)
-        else:
-            msg = '\nPLAY [{}] {}\n'.format(name, '*' * 100)
+        msg = f"\nPLAY {'*' * 100}\n" if not name else f"\nPLAY [{name}] {'*' * 100}\n"
         self.send_save(msg)
 
     def v2_playbook_on_task_start(self, task, is_conditional):
@@ -82,20 +79,20 @@ class AnsiblePlayBookResultsCollector(CallbackBase):
         if task.get_name() == 'Gathering Facts':
             return
 
-        msg = '\nTASK [{}] {}\n'.format(task.get_name(), '*' * 100)
+        msg = f"\nTASK [{task.get_name()}] {'*' * 100}\n"
         self.send_save(msg)
 
     def v2_runner_on_ok(self, result, *args, **kwargs):
         task_name = result._task.get_name()
 
-        if self.filter_output is not None and not task_name in self.filter_output:
+        if self.filter_output is not None and task_name not in self.filter_output:
             return
 
         if self.filter_output is None:
             if result.is_changed():
-                data = '[{}]=> changed'.format(result._host.name)
+                data = f'[{result._host.name}]=> changed'
             else:
-                data = '[{}]=> ok'.format(result._host.name)
+                data = f'[{result._host.name}]=> ok'
             self.send_save(data, color='yellow' if result.is_changed() else 'green')
         if 'msg' in result._task_fields['args']:
             self.send_save('\n')
@@ -104,8 +101,7 @@ class AnsiblePlayBookResultsCollector(CallbackBase):
             if self.results:
                 for k in self.results.keys():
                     regex = fr'{k}:\s*(?P<data>.*)'
-                    match = re.search(regex, msg, flags=re.MULTILINE)
-                    if match:
+                    if match := re.search(regex, msg, flags=re.MULTILINE):
                         self.results[k].append((result._host.name, match.groupdict()['data']))
 
 
@@ -114,20 +110,13 @@ class AnsiblePlayBookResultsCollector(CallbackBase):
             return
         if 'changed' in result._result:
             del result._result['changed']
-        data = 'fail: [{}]=> {}: {}'.format(
-            result._host.name, 'failed',
-            self._dump_results(result._result)
-        )
+        data = f'fail: [{result._host.name}]=> failed: {self._dump_results(result._result)}'
         self.send_save(data, color='red')
 
     def v2_runner_on_unreachable(self, result):
         if 'changed' in result._result:
             del result._result['changed']
-        data = '[{}]=> {}: {}'.format(
-            result._host.name,
-            'unreachable',
-            self._dump_results(result._result)
-        )
+        data = f'[{result._host.name}]=> unreachable: {self._dump_results(result._result)}'
         self.send_save(data)
 
     def v2_runner_on_skipped(self, result):
@@ -135,23 +124,18 @@ class AnsiblePlayBookResultsCollector(CallbackBase):
             return
         if 'changed' in result._result:
             del result._result['changed']
-        data = '[{}]=> {}: {}'.format(
-            result._host.name,
-            'skipped',
-            self._dump_results(result._result)
-        )
+        data = f'[{result._host.name}]=> skipped: {self._dump_results(result._result)}'
         self.send_save(data, color='blue')
 
     def v2_playbook_on_stats(self, stats):
         if self.filter_output is not None:
             return
         hosts = sorted(stats.processed.keys())
-        data = '\nPLAY RECAP {}\n'.format('*' * 100)
+        data = f"\nPLAY RECAP {'*' * 100}\n"
         self.send_save(data)
         for h in hosts:
             s = stats.summarize(h)
-            msg = '{} : ok={} changed={} unreachable={} failed={} skipped={}'.format(
-                h, s['ok'], s['changed'], s['unreachable'], s['failures'], s['skipped'])
+            msg = f"{h} : ok={s['ok']} changed={s['changed']} unreachable={s['unreachable']} failed={s['failures']} skipped={s['skipped']}"
             self.send_save(msg)
 
     def send_save(self, data, color=None):
@@ -190,13 +174,12 @@ class BaseCloudNodeConfigurator:
 
         self.envvars = envvars or []
         if self.envvars:
-            if not all([ (len(v.split('=')) == 2) for v in self.envvars]):
+            if any(len(v.split('=')) != 2 for v in self.envvars):
                 raise  ValueError("Improperly specified environment variables: --env variables must be specified in pairs as `<name>=<value>`")
             self.envvars = [v.split('=') for v in (self.envvars)]
 
-        cliargs = cliargs or []
         self.cliargs = []
-        if cliargs:
+        if cliargs := cliargs or []:
             for arg in cliargs:
                 if '=' in arg:
                     self.cliargs.append(arg.split('='))
@@ -322,7 +305,7 @@ class BaseCloudNodeConfigurator:
 
             data_key = f'runtime_{datatype}'
 
-            input_data = [(k, v) for k, v in getattr(self, datatype)]
+            input_data = list(getattr(self, datatype))
 
             # populate the specified environment variables as well as the
             # defaults that are only used in the inventory
@@ -339,9 +322,9 @@ class BaseCloudNodeConfigurator:
             # we don't want to save the default_envvars to the config file
             # but we do want them to be specified to the inventory template
             # but overridden on a per node basis if previously specified
-            for key, node in nodes.items():
+            for key in nodes:
                 for k, v in defaults[datatype]:
-                    if not k in nodes[key][data_key]:
+                    if k not in nodes[key][data_key]:
                         nodes[key][data_key][k] = v
 
         inventory_content = self._inventory_template.render(
@@ -424,11 +407,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -464,11 +447,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -488,11 +471,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -512,11 +495,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -535,11 +518,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -557,11 +540,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -580,11 +563,11 @@ class BaseCloudNodeConfigurator:
         variable_manager = VariableManager(loader=loader, inventory=inventory)
 
         executor = PlaybookExecutor(
-            playbooks = [playbook],
+            playbooks=[playbook],
             inventory=inventory,
             variable_manager=variable_manager,
             loader=loader,
-            passwords=dict(),
+            passwords={},
         )
         executor._tqm._stdout_callback = callback
         executor.run()
@@ -597,7 +580,7 @@ class BaseCloudNodeConfigurator:
         ]
 
     def get_all_hosts(self):
-        return [(node_name, host_data) for node_name, host_data in self.config['instances'].items()]
+        return list(self.config['instances'].items())
 
     def destroy_resources(self, node_names):
         node_names = [s for s in node_names if s in [names for names, data in self.get_provider_hosts()]]
@@ -673,9 +656,7 @@ class DigitalOceanConfigurator(BaseCloudNodeConfigurator):
 
     @property
     def instance_size(self):
-        if self.nodes_are_decentralized:
-            return 's-2vcpu-4gb'
-        return "s-1vcpu-2gb"
+        return 's-2vcpu-4gb' if self.nodes_are_decentralized else "s-1vcpu-2gb"
 
     @property
     def _provider_deploy_attrs(self):
@@ -686,7 +667,10 @@ class DigitalOceanConfigurator(BaseCloudNodeConfigurator):
     def _configure_provider_params(self, provider_profile):
         self.token = os.getenv('DIGITALOCEAN_ACCESS_TOKEN')
         if not self.token:
-            self.emitter.echo(f"Please `export DIGITALOCEAN_ACCESS_TOKEN=<your access token.>` from here:  https://cloud.digitalocean.com/account/api/tokens", color="red")
+            self.emitter.echo(
+                "Please `export DIGITALOCEAN_ACCESS_TOKEN=<your access token.>` from here:  https://cloud.digitalocean.com/account/api/tokens",
+                color="red",
+            )
             raise AttributeError("Could not continue without DIGITALOCEAN_ACCESS_TOKEN environment variable.")
         self.region = os.getenv('DIGITALOCEAN_REGION') or self.config.get('digital-ocean-region') or self.default_region
 
@@ -750,10 +734,13 @@ class DigitalOceanConfigurator(BaseCloudNodeConfigurator):
 
     def _destroy_resources(self, node_names):
 
-        existing_instances = {k: v for k, v in self.config.get('instances', {}).items() if k in node_names}
-        if existing_instances:
+        if existing_instances := {
+            k: v
+            for k, v in self.config.get('instances', {}).items()
+            if k in node_names
+        }:
             for node_name, instance in existing_instances.items():
-                if node_names and not node_name in node_names:
+                if node_names and node_name not in node_names:
                     continue
                 self.emitter.echo(f"deleting worker instance for {node_name} in 3 seconds...", color='red')
                 time.sleep(3)
@@ -764,13 +751,12 @@ class DigitalOceanConfigurator(BaseCloudNodeConfigurator):
                         "Authorization": f'Bearer {self.token}'
                 })
 
-                if result.status_code == 204 or 'not_found' in result.text:
-                    self.emitter.echo(f"\tdestroyed instance for {node_name}")
-                    del self.config['instances'][node_name]
-                    self._write_config()
-                else:
+                if result.status_code != 204 and 'not_found' not in result.text:
                     raise Exception(f"Errors occurred while deleting node: {result.text}")
 
+                self.emitter.echo(f"\tdestroyed instance for {node_name}")
+                del self.config['instances'][node_name]
+                self._write_config()
         return True
 
 
@@ -832,11 +818,13 @@ class AWSNodeConfigurator(BaseCloudNodeConfigurator):
             self.session = boto3.Session(profile_name=self.profile, region_name=self.AWS_REGION)
             self.ec2Client = self.session.client('ec2')
             self.ec2Resource = self.session.resource('ec2')
+        elif profiles:
+            self.emitter.echo(f"please select a profile (--aws-profile) from your aws profiles: {profiles}", color='red')
         else:
-            if profiles:
-                self.emitter.echo(f"please select a profile (--aws-profile) from your aws profiles: {profiles}", color='red')
-            else:
-                self.emitter.echo(f"no aws profiles could be found. Ensure aws is installed and configured: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html", color='red')
+            self.emitter.echo(
+                "no aws profiles could be found. Ensure aws is installed and configured: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html",
+                color='red',
+            )
         if self.profile:
             self.config['profile'] = self.profile
 
@@ -883,8 +871,7 @@ class AWSNodeConfigurator(BaseCloudNodeConfigurator):
             return
 
         if not self.vpc:
-            vpc_id = self.config.get('Vpc')
-            if vpc_id:
+            if vpc_id := self.config.get('Vpc'):
                 self.vpc = self.ec2Resource.Vpc(vpc_id)
             else:
                 try:
@@ -968,7 +955,7 @@ class AWSNodeConfigurator(BaseCloudNodeConfigurator):
         vpc = self.ec2Resource.Vpc(self.config['Vpc'])
         if existing_instances:
             for node_name, instance in existing_instances.items():
-                if node_names and not node_name in node_name:
+                if node_names and node_name not in node_name:
                     continue
                 self.emitter.echo(f"deleting worker instance for {node_name} in 3 seconds...", color='red')
                 time.sleep(3)
