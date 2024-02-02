@@ -3,6 +3,7 @@ import json
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from pathlib import Path
+import logging
 from typing import Dict, List, NamedTuple, Optional, Tuple, Type, Union
 
 import requests
@@ -75,6 +76,7 @@ class GithubRegistrySource(RegistrySource):
     def get_publication_endpoint(self) -> str:
         """Get the GitHub endpoint for the registry publication."""
         url = f"{self._BASE_URL}/development/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
+        logging.info(f"Fetching registry from URL: {url}")
         return url
 
     def decode(self, response: Response, endpoint: str) -> RegistryData:
@@ -82,6 +84,8 @@ class GithubRegistrySource(RegistrySource):
         try:
             data = response.json()
         except JSONDecodeError:
+            logging.error(f"Failed to decode JSON from {endpoint}. Response status: {response.status_code}")
+            logging.error(f"Response content: {response.text}")
             raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
         return data
 
