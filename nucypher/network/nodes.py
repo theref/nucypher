@@ -730,10 +730,15 @@ class Learner:
                     self._LONG_LEARNING_DELAY))
                 self._learning_task.interval = self._LONG_LEARNING_DELAY
 
-    def network_bootstrap(self, node_list: list) -> None:
+    def network_bootstrap(self, node_list: list = None) -> None:
+        if not node_list:
+            node_list = self.seed_nodes
         for node_addr, port in node_list:
-            new_nodes = self.learn_about_nodes_now(node_addr, port)
-            self.__known_nodes.update(new_nodes)
+            try:
+                new_nodes = self.learn_about_nodes_now(node_addr, port)
+                self.__known_nodes.update(new_nodes)
+            except Exception as e:
+                self.log.warn(f"Failed to connect to seed node {node_addr}:{port} - {e}")
 
     def get_nodes_by_ids(self, node_ids):
         for node_id in node_ids:
