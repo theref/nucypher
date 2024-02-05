@@ -84,6 +84,7 @@ bob = Bob(
     registry=registry,
 )
 
+bob.seed_nodes = [('https://knownnode1.nucypher.network', 9151), ('https://knownnode2.nucypher.network', 9151)]
 bob.start_learning_loop(now=True)
 
 with Profiler():
