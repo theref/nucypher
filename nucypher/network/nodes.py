@@ -547,13 +547,18 @@ class Learner:
     def handle_learning_errors(self, failure, *args, **kwargs):
         _exception = failure.value
         crash_right_now = getattr(_exception, "crash_right_now", False)
+        if isinstance(_exception, self.NotEnoughTeachers):
+            self.log.info("Encountered NotEnoughTeachers exception. Attempting to restart the learning loop.")
+            if not self._learning_task.running:
+                self.start_learning_loop()
+            return
         if self._abort_on_learning_error or crash_right_now:
             reactor.callFromThread(self._crash_gracefully, failure=failure)
             self.log.critical("Unhandled error during node learning.  Attempting graceful crash.")
         else:
             self.log.warn(f"Unhandled error during node learning: {failure.getTraceback()}")
             if not self._learning_task.running:
-                self.start_learning_loop()  # TODO: Consider a single entry point for this with more elegant pause and unpause.  NRN
+                self.start_learning_loop()
 
     def _crash_gracefully(self, failure=None):
         """
