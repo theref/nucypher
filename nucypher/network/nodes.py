@@ -580,6 +580,10 @@ class Learner:
     def cycle_teacher_node(self):
         if not self.teacher_nodes:
             self.select_teacher_nodes()
+            if not self.teacher_nodes:
+                self.log.error("No teacher nodes found after retries.")
+                # Consider implementing a fallback strategy here
+                raise self.NotEnoughTeachers("Unable to find any teacher nodes after retries.")
         try:
             self._current_teacher_node = self.teacher_nodes.pop()
         except IndexError:
