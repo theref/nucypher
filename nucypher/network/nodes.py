@@ -560,12 +560,23 @@ class Learner:
         reactor.stop()
 
     def select_teacher_nodes(self):
-        nodes_we_know_about = self.known_nodes.shuffled()
+        max_retries = 3  # This can be made configurable
+        retry_delay = 5  # Delay between retries in seconds
+        for attempt in range(max_retries):
+            try:
+                nodes_we_know_about = self.known_nodes.shuffled()
 
-        if not nodes_we_know_about:
-            raise self.NotEnoughTeachers("Need some nodes to start learning from.")
-
-        self.teacher_nodes.extend(nodes_we_know_about)
+                if not nodes_we_know_about:
+                    raise self.NotEnoughTeachers("Need some nodes to start learning from.")
+                self.teacher_nodes.extend(nodes_we_know_about)
+                break  # If successful, break out of the loop
+            except self.NotEnoughTeachers as e:
+                if attempt < max_retries - 1:
+                    self.log.warn(f"Attempt {attempt + 1} failed to find enough teachers. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    self.log.error("Maximum retries reached. Unable to find enough teacher nodes.")
+                    raise e
 
     def cycle_teacher_node(self):
         if not self.teacher_nodes:
