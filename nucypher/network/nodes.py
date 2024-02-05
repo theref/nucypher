@@ -503,7 +503,20 @@ class Learner:
             return False
         elif now:
             self.log.info("Starting Learning Loop NOW.")
-            self.learn_from_teacher_node()
+            retry_attempts = 0
+            backoff_time = 1  # Start with 1 second
+            max_retry_attempts = 3
+            while retry_attempts < max_retry_attempts:
+                try:
+                    self.learn_from_teacher_node()
+                    break  # Exit loop if successful
+                except self.NotEnoughTeachers as e:
+                    self.log.warn("Retry attempt #{}, NotEnoughTeachers encountered. Waiting for {} seconds before retrying.".format(retry_attempts + 1, backoff_time))
+                    time.sleep(backoff_time)
+                    backoff_time *= 2  # Exponential backoff
+                    retry_attempts += 1
+            if retry_attempts == max_retry_attempts:
+                self.log.critical("Maximum retry limit reached. Cannot start learning loop due to NotEnoughTeachers.")
 
             self.learning_deferred = self._learning_task.start(interval=self._SHORT_LEARNING_DELAY)
             self.learning_deferred.addErrback(self.handle_learning_errors)
