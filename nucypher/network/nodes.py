@@ -504,6 +504,7 @@ class Learner:
             return False
         elif now:
             self.log.info("Starting Learning Loop NOW.")
+            self.log.info("Attempting to learn from a teacher node.")
             self.learn_from_teacher_node()
 
             self.learning_deferred = self._learning_task.start(interval=self._SHORT_LEARNING_DELAY)
