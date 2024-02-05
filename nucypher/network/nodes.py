@@ -227,6 +227,7 @@ class Learner:
     # For Keeps
     __DEFAULT_NODE_STORAGE = ForgetfulNodeStorage
     __DEFAULT_MIDDLEWARE_CLASS = RestMiddleware
+    _teacher_node_retry_count = 0
 
     _crashed = False  # moved from Character - why was this in Character and not Learner before
 
@@ -563,7 +564,16 @@ class Learner:
         nodes_we_know_about = self.known_nodes.shuffled()
 
         if not nodes_we_know_about:
-            raise self.NotEnoughTeachers("Need some nodes to start learning from.")
+            try:
+                raise self.NotEnoughTeachers("Need some nodes to start learning from.")
+            except self.NotEnoughTeachers as e:
+                if self._teacher_node_retry_count < 3:
+                    self.log.warn(f"Not enough teachers during try {{self._teacher_node_retry_count}}: {{str(e)}}. Retrying after {{self._SHORT_LEARNING_DELAY}} seconds...")
+                    self._teacher_node_retry_count += 1
+                    time.sleep(self._SHORT_LEARNING_DELAY)
+                    self.select_teacher_nodes()
+                else:
+                    raise
 
         self.teacher_nodes.extend(nodes_we_know_about)
 
