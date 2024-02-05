@@ -537,10 +537,15 @@ class Learner:
         if self._abort_on_learning_error or crash_right_now:
             reactor.callFromThread(self._crash_gracefully, failure=failure)
             self.log.critical("Unhandled error during node learning.  Attempting graceful crash.")
+        elif isinstance(_exception, ConnectionError):
+            retry_delay = 5  # seconds
+            self.log.warn(f"Connection error during node learning: {_exception}. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+            self.start_learning_loop()  # Restart the learning loop
         else:
             self.log.warn(f"Unhandled error during node learning: {failure.getTraceback()}")
             if not self._learning_task.running:
-                self.start_learning_loop()  # TODO: Consider a single entry point for this with more elegant pause and unpause.  NRN
+                self.start_learning_loop()  # Continue the learning loop
 
     def _crash_gracefully(self, failure=None):
         """
