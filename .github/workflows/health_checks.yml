@@ -1,0 +1,40 @@
+name: Health Checks
+
+on: [push, pull_request]
+
+jobs:
+  pre_checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Check Database Connectivity
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Attempting to connect to the database..."
+        if ! python scripts/check_database_connectivity.py; then echo "Database connectivity check failed"; exit 1; fi
+
+    - name: Check Blockchain Node Connectivity
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Checking blockchain node connectivity..."
+        if ! python scripts/check_blockchain_node.py; then echo "Blockchain node connectivity check failed"; exit 1; fi
+
+    - name: Check External API Readiness
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Pinging external APIs..."
+        if ! python scripts/check_external_apis.py; then echo "External API readiness check failed"; exit 1; fi
+
+    - name: Verify Necessary Commands and Scripts
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Verifying availability of necessary commands and scripts..."
+        if [ ! -x "$(command -v python)" ]; then echo "Python is not installed or not executable"; exit 1; fi
+        if [ ! -f scripts/check_database_connectivity.py ]; then echo "Database connectivity script is missing"; exit 1; fi
+        if [ ! -f scripts/check_blockchain_node.py ]; then echo "Blockchain node check script is missing"; exit 1; fi
+        if [ ! -f scripts/check_external_apis.py ]; then echo "External API check script is missing"; exit 1; fi
