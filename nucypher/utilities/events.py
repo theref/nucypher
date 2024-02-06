@@ -246,8 +246,11 @@ class EventScanner:
             )
 
             for evt in events:
-                processed = self.process_event(event=evt, get_block_when=get_block_when)
-                all_processed.append(processed)
+                try:
+                    processed = self.process_event(event=evt, get_block_when=get_block_when)
+                    all_processed.append(processed)
+                except Exception as e:
+                    logger.error(f"Failed to process event {evt}: {str(e)}")
 
         end_block_timestamp = get_block_when(end_block)
         return end_block, end_block_timestamp, all_processed
@@ -406,7 +409,11 @@ def _fetch_events_for_all_contracts(
 
     # Call JSON-RPC API on your Ethereum node.
     # get_logs() returns raw AttributedDict entries
-    logs = web3.eth.get_logs(event_filter_params)
+    try:
+        logs = web3.eth.get_logs(event_filter_params)
+    except Exception as e:
+        logger.error(f"Failed to fetch logs: {str(e)}")
+        return []
 
     # Convert raw binary data to Python proxy objects as described by ABI
     all_events = []
