@@ -43,6 +43,16 @@ contributing proposed changes:
 
 3. Change directory to ``nucypher``
 
+4. Install project dependencies and run tests and linting locally to ensure your changes pass all checks before submitting a pull request. Use the following commands:
+
+.. code-block:: bash
+
+   $ pip install -r requirements.txt
+   $ pytest
+   $ flake8 .
+
+5. Add ``nucypher/nucypher`` as an upstream remote
+
 .. code-block:: bash
 
    $ cd nucypher
