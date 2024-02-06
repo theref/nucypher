@@ -1,0 +1,33 @@
+name: Linting and Static Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt -r requirements-dev.txt
+
+    - name: Lint with flake8
+      run: flake8 nucypher
+
+    - name: Static analysis with mypy
+      run: mypy nucypher
