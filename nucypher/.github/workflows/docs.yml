@@ -1,0 +1,41 @@
+name: Documentation Validation and Build
+
+on:
+  push:
+    paths:
+      - '**/*.rst'
+      - 'docs/**'
+      - 'CONTRIBUTING.rst'
+  pull_request:
+    paths:
+      - '**/*.rst'
+      - 'docs/**'
+      - 'CONTRIBUTING.rst'
+
+jobs:
+  validate-and-build-docs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install documentation dependencies
+      run: |
+        pip install sphinx sphinx_rtd_theme doc8
+        pip install -r docs/requirements.txt
+
+    - name: Validate RST files
+      run: doc8 **/*.rst
+
+    - name: Build documentation
+      run: |
+        cd docs
+        make html
