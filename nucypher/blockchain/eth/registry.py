@@ -74,7 +74,8 @@ class GithubRegistrySource(RegistrySource):
 
     def get_publication_endpoint(self) -> str:
         """Get the GitHub endpoint for the registry publication."""
-        url = f"{self._BASE_URL}/development/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
+        url = f"{self._BASE_URL}/main/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
+        self.logger.info(f"Accessing GitHub registry URL: {url}")
         return url
 
     def decode(self, response: Response, endpoint: str) -> RegistryData:
@@ -92,11 +93,8 @@ class GithubRegistrySource(RegistrySource):
                 f"Downloading contract registry from {publication_endpoint}"
             )
             response = requests.get(publication_endpoint)
-        except requests.exceptions.ConnectionError as e:
-            error = f"Failed to fetch registry from {publication_endpoint}: {str(e)}"
-            raise self.Unavailable(error)
-        if response.status_code != 200:
-            error = f"Failed to fetch registry from {publication_endpoint} with status code {response.status_code}"
+        except requests.exceptions.RequestException as e:
+            error = f"HTTP error occurred while fetching registry from {publication_endpoint}: {str(e)}"
             raise self.Unavailable(error)
         data = self.decode(response=response, endpoint=publication_endpoint)
         return data
