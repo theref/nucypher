@@ -1,0 +1,42 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Pre-Check for Common Misconfigurations
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Checking environment variables..."
+        if [ -z "${{ secrets.DATABASE_URL }}" ]; then echo "DATABASE_URL is not set"; exit 1; fi
+        echo "Checking if necessary services are up..."
+        if ! nc -z db 5432; then echo "Database is not reachable"; exit 1; fi
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Verify Scripts and Commands
+      run: |
+        #!/bin/bash
+        set -e
+        if [ ! -x "$(command -v pytest)" ]; then echo "pytest is not installed or not executable"; exit 1; fi
+
+    - name: Install Dependencies
+      run: pip install -r requirements.txt --cache-dir ~/.cache/pip
+
+    - name: Environment Verification
+      run: |
+        #!/bin/bash
+        set -e
+        echo "Pinging necessary services..."
+        if ! ping -c 1 example-service; then echo "Service is not reachable"; exit 1; fi
+        echo "Checking database connectivity..."
+        python check_database.py
