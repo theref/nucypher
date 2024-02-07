@@ -140,6 +140,9 @@ jobs:
 
 
       # Only upload coverage files after all tests have passed
+      - name: Check if all tests passed
+        if: success()
+
       - name: Upload unit tests coverage to Codecov
         if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v3.1.1
@@ -150,6 +153,9 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+      - name: Check if all tests passed
+        if: success()
+
       - name: Upload integration tests coverage to Codecov
         if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v3.1.1
@@ -159,6 +165,9 @@ jobs:
           flags: integration
           fail_ci_if_error: true
           verbose: true
+
+      - name: Check if all tests passed
+        if: success()
 
       - name: Upload acceptance tests coverage to Codecov
         if: matrix.python-version == '3.12'
