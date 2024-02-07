@@ -137,6 +137,27 @@ For convenience, here is a one-liner to enable both:
   (nucypher)$ pre-commit install && pre-commit install -t pre-push
 
 
+GitHub Actions CI Guide
+-----------------------
+
+As part of our CI/CD process, we use GitHub Actions to automate testing and linting on all pull requests. After you submit a PR, you can check the status of the GitHub Actions runs in the "Checks" tab of your pull request page.
+
+If you encounter a CI failure, here's what you can do:
+
+1. Click on the "Details" link next to the failed step to view the logs.
+2. Look for the error messages and identify the test case or linting rule that failed.
+3. Make the necessary changes to your code to fix the issues.
+4. Commit and push your changes. GitHub Actions will automatically re-run the tests on your updated PR.
+
+Before submitting your PR, it's a good practice to run linting and tests locally to reduce the likelihood of CI failures. This not only saves time but also streamlines the review process. To run linting and tests locally, you can use the following commands:
+
+.. code-block:: bash
+
+  (nucypher)$ flake8 nucypher/
+  (nucypher)$ pytest -s tests/unit
+  (nucypher)$ pytest -s tests/integration
+
+
 Making a Commit
 ---------------
 
