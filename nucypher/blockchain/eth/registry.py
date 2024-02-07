@@ -79,10 +79,12 @@ class GithubRegistrySource(RegistrySource):
 
     def decode(self, response: Response, endpoint: str) -> RegistryData:
         """JSON Decode the registry data."""
+        self.logger.debug(f"Raw registry JSON data: {response.text}")
         try:
             data = response.json()
         except JSONDecodeError:
             raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
+        self.logger.debug(f"Decoded registry data: {data}")
         return data
 
     def get(self) -> RegistryData:
