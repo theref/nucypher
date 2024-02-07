@@ -59,6 +59,32 @@ contributing proposed changes:
 
    $ git remote update
 
+Running Tests and Linters Locally
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After setting up your development environment and acquiring the codebase, it is crucial to ensure your changes meet the project's quality standards before contributing. This involves running tests and linters locally.
+
+To install project dependencies including test and linter packages, run:
+
+.. code-block:: bash
+
+   $ pip install -r dev-requirements.txt
+
+To run the test suite, use the following command:
+
+.. code-block:: bash
+
+   $ pytest
+
+Ensure all tests pass successfully. Additionally, to check code quality and adherence to coding standards, run the linter and code formatter using:
+
+.. code-block:: bash
+
+   $ flake8 .
+   $ black .
+
+It's essential to resolve any issues highlighted by tests or linters before pushing changes or creating a pull request.
+
 
 Ensure Rust is Installed
 ^^^^^^^^^^^^^^^^^^^^^^^^^
