@@ -1,0 +1,38 @@
+name: .github/workflows/error_reporting.yml
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+    statuses:
+      - failure
+
+jobs:
+  report_error:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Collect Error Logs
+      run: |
+        mkdir -p error_reports
+        cp logs/error.log error_reports/ || echo "No error log found."
+
+    - name: Send Notification to Slack
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_CHANNEL: general
+        SLACK_COLOR: '#FF0000'
+        SLACK_ICON: https://example.com/failure_icon.png
+        SLACK_MESSAGE: 'Failure in CI detected. Please check the error logs for more details.'
+        SLACK_TITLE: 'CI Failure Notification'
+        SLACK_USERNAME: CI Bot
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      with:
+        status: ${{ job.status }}
+        fields: repo,commit,author,action,eventName,ref,workflow,job,took
