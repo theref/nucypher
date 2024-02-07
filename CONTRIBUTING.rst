@@ -137,6 +137,36 @@ For convenience, here is a one-liner to enable both:
   (nucypher)$ pre-commit install && pre-commit install -t pre-push
 
 
+Running GitHub Actions Locally
+-------------------------------
+
+Contributors who wish to test their changes and ensure compatibility with the repository's GitHub Actions workflows can do so using tools like `act`. `act` emulates the GitHub Actions environment on a local machine, allowing you to run workflows manually before pushing your code.
+
+To use `act`, first install it following the guidelines on its GitHub page (https://github.com/nektos/act). Then, navigate to your project directory and run:
+
+.. code:: bash
+
+  (nucypher)$ act
+
+This command executes the default event trigger in your workflows. For specific workflows or events, consult the `act` documentation.
+
+Interpreting GitHub Actions Logs
+---------------------------------
+
+Understanding GitHub Actions logs is crucial for diagnosing issues within workflows. When a workflow fails, review the logs provided in the Actions tab on the GitHub repository page. These logs detail each step executed within the workflow and highlight where errors occurred.
+
+To effectively diagnose problems:
+
+1. Identify the step where the error occurred and carefully read the corresponding log messages.
+2. Compare the failing step's actions with those outlined in the workflow file (`*.yml`) to spot deviations or errors in configuration.
+3. Look for error messages or warning indicators, such as those related to dependency installation, script execution, or environment variables.
+4. Use context from previous successful runs or search online for similar issues encountered by others.
+
+By accurately identifying the cause of failure, contributors can make necessary adjustments before committing changes, reducing the likelihood of workflow disruptions.
+
+  (nucypher)$ pre-commit install && pre-commit install -t pre-push
+
+
 Making a Commit
 ---------------
 
