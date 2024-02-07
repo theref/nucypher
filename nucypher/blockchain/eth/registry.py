@@ -1,4 +1,6 @@
 import hashlib
+import logging
+from urllib.parse import urljoin
 import json
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
@@ -72,9 +74,16 @@ class GithubRegistrySource(RegistrySource):
         name = f"{str(self.domain)}.json"
         return name
 
+    def validate_response(self, response: Response) -> None:
+        """Validate HTTP response status code."""
+        if response.status_code != 200:
+            error = f"Failed to fetch registry with status code {response.status_code}"
+            raise self.Unavailable(error)
+
     def get_publication_endpoint(self) -> str:
         """Get the GitHub endpoint for the registry publication."""
-        url = f"{self._BASE_URL}/development/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
+        self.logger.debug(f"Constructing publication endpoint URL for {self.registry_name}")
+        url = urljoin(self._BASE_URL, f'/development/nucypher/blockchain/eth/contract_registry/{self.registry_name}')
         return url
 
     def decode(self, response: Response, endpoint: str) -> RegistryData:
@@ -82,6 +91,7 @@ class GithubRegistrySource(RegistrySource):
         try:
             data = response.json()
         except JSONDecodeError:
+            self.logger.error(f"Invalid registry JSON content at '{endpoint}': {response.text}")
             raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
         return data
 
@@ -92,6 +102,7 @@ class GithubRegistrySource(RegistrySource):
                 f"Downloading contract registry from {publication_endpoint}"
             )
             response = requests.get(publication_endpoint)
+            self.validate_response(response)
         except requests.exceptions.ConnectionError as e:
             error = f"Failed to fetch registry from {publication_endpoint}: {str(e)}"
             raise self.Unavailable(error)
