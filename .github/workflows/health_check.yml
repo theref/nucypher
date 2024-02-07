@@ -1,0 +1,42 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  workflow_dispatch:
+
+jobs:
+  health_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run critical tests
+        run: python -m unittest discover -p '*smoke*.py'
+
+      - name: Check external dependencies
+        run: |
+          curl -f https://api.external-service.com/health
+          # Add more checks as needed
+
+      - name: Notify maintainers on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: smtp.example.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: Repository Health Check Failed
+          body: The health check workflow has failed. Please check the GitHub Actions logs for more details.
+          to: maintainer@example.com
+          from: noreply@example.com
