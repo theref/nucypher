@@ -1,8 +1,10 @@
+import logging
 import hashlib
 import json
 from abc import ABC, abstractmethod
 from json import JSONDecodeError
 from pathlib import Path
+logger = logging.getLogger(__name__)
 from typing import Dict, List, NamedTuple, Optional, Tuple, Type, Union
 
 import requests
@@ -82,6 +84,7 @@ class GithubRegistrySource(RegistrySource):
         try:
             data = response.json()
         except JSONDecodeError:
+            logger.error(f"Failed to decode JSON from '{endpoint}'. Response content: {response.content}")
             raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
         return data
 
@@ -127,6 +130,7 @@ class LocalRegistrySource(RegistrySource):
         try:
             data = json.loads(data)
         except JSONDecodeError:
+            logger.error(f"Failed to decode JSON from '{endpoint}'. Response content: {data}")
             raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
         return data
 
