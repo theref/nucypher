@@ -406,7 +406,23 @@ def _fetch_events_for_all_contracts(
 
     # Call JSON-RPC API on your Ethereum node.
     # get_logs() returns raw AttributedDict entries
-    logs = web3.eth.get_logs(event_filter_params)
+    logs = []
+    retries = 0
+    max_retries = 5
+    backoff_factor = 2.0
+    while retries < max_retries:
+        try:
+            logs = web3.eth.get_logs(event_filter_params)
+            break  # Success, exit loop
+        except Exception as e:
+            if retries < max_retries - 1:
+                sleep_time = backoff_factor ** retries
+                logger.error(f"Failed to get logs, retrying in {sleep_time} seconds. Error: {e}")
+                time.sleep(sleep_time)
+                retries += 1
+            else:
+                logger.error("Final attempt to get logs failed.")
+                break  # Exit loop after final attempt
 
     # Convert raw binary data to Python proxy objects as described by ABI
     all_events = []
