@@ -49,6 +49,10 @@ def initialize_sentry(dsn: str):
     def before_send(event, hint):
         logger = event.get('logger')
         if logger in ignored_loggers:
+import logging
+
+def configure_logging():
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             return
         return event
 
