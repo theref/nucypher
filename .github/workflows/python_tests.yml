@@ -36,7 +36,7 @@ jobs:
         name: Retrieve Cached Python Dependencies
         uses: actions/cache@v3
         with:
-          path: ${{ env.pythonLocation }}
+          path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt', 'requirements.txt') }}
 
       - name: Upgrade pip
