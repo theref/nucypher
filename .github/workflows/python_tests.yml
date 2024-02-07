@@ -59,6 +59,14 @@ jobs:
         run: |
           coverage run --data-file=unit_data -m pytest tests/unit
           coverage xml -i --data-file=unit_data -o unit-coverage.xml
+      - name: Verify Test Directories and Files
+        run: |
+          if [ ! -d tests/unit ]; then echo "Unit test directory does not exist"; exit 1; fi
+          if [ ! -d tests/integration ]; then echo "Integration test directory does not exist"; exit 1; fi
+          if [ ! -d tests/acceptance ]; then echo "Acceptance test directory does not exist"; exit 1; fi
+          find tests/unit -type f -name "*.py" | grep -q . || { echo "No unit test files found"; exit 1; }
+          find tests/integration -type f -name "*.py" | grep -q . || { echo "No integration test files found"; exit 1; }
+          find tests/acceptance -type f -name "*.py" | grep -q . || { echo "No acceptance test files found"; exit 1; }
 
       - name: Unit Tests
         if: matrix.python-version != '3.9'
@@ -74,6 +82,10 @@ jobs:
       - name: Integration Tests
         if: matrix.python-version != '3.12'
         run: python -m pytest tests/integration
+      - name: Annotate Unit Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
 
       # Acceptance tests
       - name: Agents Tests (Coverage)
@@ -89,6 +101,10 @@ jobs:
         run: python -m pytest agents
 
       - name: Actors Tests (Coverage)
+      - name: Annotate Integration Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
         if: matrix.python-version == '3.12'
         working-directory: tests/acceptance
         run: |
@@ -104,6 +120,10 @@ jobs:
       - name: Conditions Tests (Coverage)
         if: matrix.python-version == '3.12'
         working-directory: tests/acceptance
+      - name: Annotate Agents Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
         run: |
           coverage run --data-file=acceptance_conditions_data -m pytest conditions
           coverage xml -i --data-file=acceptance_conditions_data -o acceptance-conditions-coverage.xml
@@ -119,6 +139,10 @@ jobs:
         working-directory: tests/acceptance
         run: |
           coverage run --data-file=acceptance_characters_data -m pytest characters
+      - name: Annotate Actors Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
           coverage xml -i --data-file=acceptance_characters_data -o acceptance-characters-coverage.xml
 
       - name: Characters Tests
@@ -133,7 +157,10 @@ jobs:
         run: |
           coverage run --data-file=acceptance_cli_data -m pytest cli
           coverage xml -i --data-file=acceptance_cli_data -o acceptance-cli-coverage.xml
-
+      - name: Annotate Characters Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
       - name: CLI Tests
         if: matrix.python-version != '3.12'
         working-directory: tests/acceptance
@@ -169,5 +196,9 @@ jobs:
           directory: tests/acceptance
           files: acceptance-agents-coverage.xml, acceptance-actors-coverage.xml, acceptance-conditions-coverage.xml, acceptance-characters-coverage.xml, acceptance-cli-coverage.xml
           flags: acceptance
+      - name: Annotate CLI Tests
+        run: |
+          pytestmark = pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+          pytestmark = pytest.mark.xfail(sys.version_info == (3, 8), reason="known issue with python3.8")
           fail_ci_if_error: true
           verbose: true
