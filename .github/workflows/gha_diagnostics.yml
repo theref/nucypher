@@ -34,3 +34,8 @@ jobs:
           echo "Verifying external services..."
           curl -f https://api.github.com/ > /dev/null || { echo "GitHub API is not reachable"; exit 1; }
           curl -f https://pypi.org/ > /dev/null || { echo "PyPI is not reachable"; exit 1; }
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          # Add command to run the repository's test suite, ensuring all tests pass.
