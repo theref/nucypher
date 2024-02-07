@@ -40,7 +40,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-pip-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt', 'requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ github.workflow }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('dev-requirements.txt', 'requirements.txt') }}
+      - name: Log cache status
+        run: echo "Cache hit: ${{ steps.python_cache.outputs.cache-hit }}"
 
       - name: Upgrade pip
         if: steps.python_cache.outputs.cache-hit != 'true'
