@@ -1,0 +1,28 @@
+name: Error Reporting
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  error-reporting:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion != 'success' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: logs
+
+      - name: Consolidate Logs
+        run: cat logs/* > consolidated_logs.txt
+
+      - name: Upload Consolidated Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: consolidated-error-report
+          path: consolidated_logs.txt
