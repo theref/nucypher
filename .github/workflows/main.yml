@@ -56,3 +56,10 @@ jobs:
     - name: Report detailed error messages
       if: failure()
       run: echo "Error encountered in previous steps. Check the logs for details."
+
+    - name: Upload logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: path/to/logs/*
