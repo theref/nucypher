@@ -189,10 +189,12 @@ jobs:
           verbose: true
 
       - name: Upload acceptance tests coverage to Codecov
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         uses: codecov/codecov-action@v3.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          directory: tests/acceptance
+          files: acceptance-agents-coverage.xml, acceptance-actors-coverage.xml, acceptance-conditions-coverage.xml, acceptance-characters-coverage.xml, acceptance-cli-coverage.xml
           directory: tests/acceptance
           files: acceptance-agents-coverage.xml, acceptance-actors-coverage.xml, acceptance-conditions-coverage.xml, acceptance-characters-coverage.xml, acceptance-cli-coverage.xml
           flags: acceptance
