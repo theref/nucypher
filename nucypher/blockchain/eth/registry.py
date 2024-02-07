@@ -81,8 +81,10 @@ class GithubRegistrySource(RegistrySource):
         """JSON Decode the registry data."""
         try:
             data = response.json()
-        except JSONDecodeError:
-            raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
+        except JSONDecodeError as e:
+            error_msg = f"Invalid registry JSON at '{endpoint}': {str(e)}"
+            self.logger.error(error_msg)
+            raise self.Invalid(error_msg)
         return data
 
     def get(self) -> RegistryData:
@@ -92,9 +94,10 @@ class GithubRegistrySource(RegistrySource):
                 f"Downloading contract registry from {publication_endpoint}"
             )
             response = requests.get(publication_endpoint)
-        except requests.exceptions.ConnectionError as e:
-            error = f"Failed to fetch registry from {publication_endpoint}: {str(e)}"
-            raise self.Unavailable(error)
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Network request exception when fetching registry from {publication_endpoint}: {str(e)}"
+            self.logger.error(error_msg)
+            raise self.Unavailable(error_msg)
         if response.status_code != 200:
             error = f"Failed to fetch registry from {publication_endpoint} with status code {response.status_code}"
             raise self.Unavailable(error)
