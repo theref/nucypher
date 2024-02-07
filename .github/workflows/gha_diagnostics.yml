@@ -1,0 +1,36 @@
+name: GHA Diagnostics
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Check for common configuration errors
+        run: |
+          echo "Checking for common configuration errors..."
+          grep -Rl 'on: push' .github/workflows/ | xargs grep -L 'branches:'
+          grep -Rl 'uses: actions/' .github/workflows/ | xargs grep -L 'with:'
+          grep -R 'main' .github/workflows/* | grep -v 'main.yml'
+      
+      - name: Ensure environment variables are set
+        run: |
+          echo "Checking environment variables..."
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then echo "AWS_ACCESS_KEY_ID is not set"; exit 1; fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then echo "AWS_SECRET_ACCESS_KEY is not set"; exit 1; fi
+          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then echo "DOCKER_PASSWORD is not set"; exit 1; fi
+      
+      - name: Verify external services availability
+        run: |
+          echo "Verifying external services..."
+          curl -f https://api.github.com/ > /dev/null || { echo "GitHub API is not reachable"; exit 1; }
+          curl -f https://pypi.org/ > /dev/null || { echo "PyPI is not reachable"; exit 1; }
