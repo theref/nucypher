@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.8", "3.12" ]
+        python-version: [ "3.8", "3.9" ]
 
     steps:
       - name: Checkout repo
@@ -54,13 +54,13 @@ jobs:
 
       # Unit tests
       - name: Unit Tests (Coverage)
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         run: |
           coverage run --data-file=unit_data -m pytest tests/unit
           coverage xml -i --data-file=unit_data -o unit-coverage.xml
 
       - name: Unit Tests
-        if: matrix.python-version != '3.12'
+        if: matrix.python-version != '3.9'
         run: python -m pytest tests/unit
 
       # Integration tests
@@ -76,7 +76,7 @@ jobs:
 
       # Acceptance tests
       - name: Agents Tests (Coverage)
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         working-directory: tests/acceptance
         run: |
           coverage run --data-file=acceptance_agent_data -m pytest agents
@@ -95,7 +95,7 @@ jobs:
           coverage xml -i --data-file=acceptance_actors_data -o acceptance-actors-coverage.xml
 
       - name: Actors Tests
-        if: matrix.python-version != '3.12'
+        if: matrix.python-version != '3.9'
         working-directory: tests/acceptance
         run: python -m pytest actors
 
@@ -114,14 +114,14 @@ jobs:
 
 
       - name: Characters Tests (Coverage)
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         working-directory: tests/acceptance
         run: |
           coverage run --data-file=acceptance_characters_data -m pytest characters
           coverage xml -i --data-file=acceptance_characters_data -o acceptance-characters-coverage.xml
 
       - name: Characters Tests
-        if: matrix.python-version != '3.12'
+        if: matrix.python-version != '3.9'
         working-directory: tests/acceptance
         run: python -m pytest characters
 
@@ -141,7 +141,7 @@ jobs:
 
       # Only upload coverage files after all tests have passed
       - name: Upload unit tests coverage to Codecov
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         uses: codecov/codecov-action@v3.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -151,7 +151,7 @@ jobs:
           verbose: true
 
       - name: Upload integration tests coverage to Codecov
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.9'
         uses: codecov/codecov-action@v3.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
