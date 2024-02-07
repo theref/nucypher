@@ -184,7 +184,11 @@ class EventScanner:
         """Get Ethereum block timestamp"""
         try:
             block_info = self.web3.eth.get_block(block_num)
-        except BlockNotFound:
+        except BlockNotFound as e:
+            logger.warning(f"Block {block_num} not found: {e}")
+
+
+            return None
             # Block was not mined yet,
             # minor chain reorganisation?
             return None
@@ -406,7 +410,11 @@ def _fetch_events_for_all_contracts(
 
     # Call JSON-RPC API on your Ethereum node.
     # get_logs() returns raw AttributedDict entries
-    logs = web3.eth.get_logs(event_filter_params)
+    try:
+        logs = web3.eth.get_logs(event_filter_params)
+    except Exception as e:
+        logger.error(f"Failed to fetch events due to: {e}")
+        return []
 
     # Convert raw binary data to Python proxy objects as described by ABI
     all_events = []
