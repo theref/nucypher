@@ -79,7 +79,7 @@ Alternately, you can install the development dependencies with pip:
     $ pip3 install -e .[dev]
 
 
-Running the Tests
+Running the Tests Locally
 -----------------
 
 .. note::
@@ -152,6 +152,9 @@ the thinking behind the PRs history. Does your commit history tell an honest and
 We understand that different code authors have different development preferences, and others
 are first-time contributors to open source, so feel free to join our `Discord <https://discord.gg/7rmXa3S>`_ and let us know
 how we can best support the submission of your proposed changes.
+
+
+Before submitting a pull request, please ensure you run all local tests as described in the `Running the Tests`_ section. This can help reduce the number of failures during GitHub Actions executions, since many potential issues can be caught earlier. Additionally, when making changes to the codebase, consider whether new or updated tests are required. Maintaining a robust test suite is crucial for the success of our CI/CD processes.
 
 
 Opening a Pull Request
