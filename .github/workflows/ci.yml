@@ -12,12 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: '3.8'
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.pip-cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -27,9 +35,16 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-logs
+          path: logs
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: logs
-          path: path/to/logs
+          path: logs
