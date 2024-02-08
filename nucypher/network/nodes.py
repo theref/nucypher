@@ -650,7 +650,7 @@ class Learner:
                 return True
 
             if not self._learning_task.running:
-                self.log.warn("Blocking to learn about nodes, but learning loop isn't running.")
+                self.log.warn("Blocking to learn about nodes, but learning loop isn't running. Ensure the learning loop is correctly configured and started. Check your network connection and node configuration.")
             if learn_on_this_thread:
                 try:
                     self.learn_from_teacher_node(eager=eager)
@@ -673,7 +673,7 @@ class Learner:
                     raise RuntimeError(
                         f"The reactor isn't running, but you're trying to use it for discovery.  You need to start the Reactor in order to use {self} this way.")
                 else:
-                    raise self.NotEnoughNodes("After {} seconds and {} rounds, didn't find {} nodes".format(
+                    raise self.NotEnoughNodes("After {} seconds and {} rounds, didn't find {} nodes. Ensure your network connection is stable and check if the specified nodes are active and reachable.".format(
                         timeout, rounds_undertaken, number_of_nodes_to_know))
             else:
                 time.sleep(.1)
