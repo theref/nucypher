@@ -562,8 +562,20 @@ class Learner:
     def select_teacher_nodes(self):
         nodes_we_know_about = self.known_nodes.shuffled()
 
+        max_retries = 3
+        backoff_factor = 2
+        retry_wait_time = 2
+
+        for retry in range(max_retries):
+            if nodes_we_know_about:
+                break
+            self.log.warn(f"No teacher nodes available. Retry in {retry_wait_time} seconds.")
+            time.sleep(retry_wait_time)
+            retry_wait_time *= backoff_factor
+            nodes_we_know_about = self.known_nodes.shuffled()
+
         if not nodes_we_know_about:
-            raise self.NotEnoughTeachers("Need some nodes to start learning from.")
+            raise self.NotEnoughTeachers("Need some nodes to start learning from even after {max_retries} retries.")
 
         self.teacher_nodes.extend(nodes_we_know_about)
 
