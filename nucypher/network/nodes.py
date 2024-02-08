@@ -569,12 +569,16 @@ class Learner:
 
     def cycle_teacher_node(self):
         if not self.teacher_nodes:
-            self.select_teacher_nodes()
+            self._use_fallback_nodes()
+            if not self.teacher_nodes:  # Check again after attempting to use fallback nodes
+                self.log.warning("Fallback nodes exhausted. Not enough nodes to select a good teacher.")
+                error = "Not enough nodes to select a good teacher. Check your network connection and node configuration. If the issue persists, consider defining more reliable fallback nodes."
+                raise self.NotEnoughTeachers(error)
         try:
             self._current_teacher_node = self.teacher_nodes.pop()
-        except IndexError:
-            error = "Not enough nodes to select a good teacher, Check your network connection then node configuration"
-            raise self.NotEnoughTeachers(error)
+        except IndexError:  # Fallback safety check
+                self.log.warning("Unexpected IndexError: teacher_nodes unexpectedly empty.")
+                raise self.NotEnoughTeachers("Unexpected empty teacher nodes list after attempting to use fallback nodes.")
         self.log.debug("Cycled teachers; New teacher is {}".format(self._current_teacher_node))
 
     def current_teacher_node(self, cycle=False):
@@ -699,7 +703,26 @@ class Learner:
                 raise RuntimeError(
                     "Tried to block while discovering nodes on another thread, but the learning task isn't running.")
 
-            if (maya.now() - start).seconds > timeout:
+    def _use_fallback_nodes(self):
+        """
+        Attempts to connect to a list of predefined fallback nodes.
+        """
+        fallback_nodes = ["https://fallback1.nucypher.network:9151", "https://fallback2.nucypher.network:9151"]
+        self.log.info("Attempting to use fallback nodes.")
+        for uri in fallback_nodes:
+            try:
+                maybe_fallback_node = self.node_class.from_teacher_uri(
+                    teacher_uri=uri,
+                    min_stake=0,
+                    eth_endpoint=self.eth_endpoint,
+                    network_middleware=self.network_middleware,
+                    registry=self.registry,
+                )
+                new_node = self.remember_node(maybe_fallback_node, record_fleet_state=False)
+                self.teacher_nodes.append(new_node)
+                self.log.info(f"Added fallback node {uri} to teacher nodes.")
+            except Exception as e:
+                self.log.warn(f"Failed to instantiate a node at {uri}: {e}")            if (maya.now() - start).seconds > timeout:
 
                 still_unknown = addresses.difference(self.known_nodes.addresses())
 
