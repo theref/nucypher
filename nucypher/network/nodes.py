@@ -809,7 +809,20 @@ class Learner:
 
         self._learning_round += 1
 
-        current_teacher = self.current_teacher_node()  # Will raise if there's no available teacher.
+        # Retry mechanism for selecting teacher nodes
+        max_retries = 3
+        for retry in range(max_retries):
+            try:
+                current_teacher = self.current_teacher_node()  # Attempt to select a teacher node
+                break
+            except self.NotEnoughTeachers:
+                if retry < max_retries - 1:  # Retry if we are not on the last attempt
+                    self.log.warn(f"Attempt {retry + 1} to find a teacher node failed. Retrying...")
+                    self.cycle_teacher_node()  # Re-select teacher nodes
+                    time.sleep(5)  # Wait before retrying
+                else:
+                    self.log.warn(f"Maximum retries ({max_retries}) reached. Unable to find a teacher node.")
+                    return
 
         if isinstance(self, Teacher):
             announce_nodes = [self.metadata()]
