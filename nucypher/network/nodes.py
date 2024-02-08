@@ -871,7 +871,9 @@ class Learner:
             raise
         finally:
             # Is cycling happening in the right order?
-            self.cycle_teacher_node()
+            # Ensure cycle_teacher_node is only called if learning from a teacher was attempted
+            if hasattr(self, '_successfully_selected_teacher') and self._successfully_selected_teacher:
+                self.cycle_teacher_node()
 
         if response.status_code != 200:
             self.log.info(
