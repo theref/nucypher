@@ -502,16 +502,21 @@ class Learner:
         if self._learning_task.running:
             return False
         elif now:
-            self.log.info("Starting Learning Loop NOW.")
-            self.learn_from_teacher_node()
+            self.log.info("Starting Learning Loop NOW. Learning attempts will be made every " + str(self._SHORT_LEARNING_DELAY) + " seconds.")
+            try:
+                self.learn_from_teacher_node()
+            except Exception as e:
+                self.log.error(f"Failed to initiate the learning loop: {e}")
+                return False
 
             self.learning_deferred = self._learning_task.start(interval=self._SHORT_LEARNING_DELAY)
             self.learning_deferred.addErrback(self.handle_learning_errors)
             return self.learning_deferred
         else:
-            self.log.info("Starting Learning Loop.")
+            self.log.info("Starting Learning Loop. Learning attempts will be made every " + str(self._SHORT_LEARNING_DELAY) + " seconds.")
             learner_deferred = self._learning_task.start(interval=self._SHORT_LEARNING_DELAY, now=False)
             learner_deferred.addErrback(self.handle_learning_errors)
+            learner_deferred.addBoth(lambda _: self.log.info('Learning loop attempt completed.'))
             self.learning_deferred = learner_deferred
             return self.learning_deferred
 
