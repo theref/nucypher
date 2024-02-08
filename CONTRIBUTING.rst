@@ -134,6 +134,27 @@ For convenience, here is a one-liner to enable both:
 
 .. code:: bash
 
+Verify GitHub Actions Locally
+-----------------------------
+
+Before pushing your changes, it's crucial to ensure that your GitHub Actions workflows will run successfully in the CI environment. A helpful tool for this purpose is `act` (https://github.com/nektos/act), which allows you to run your GitHub Actions workflows locally.
+
+Installing act:
+
+.. code:: bash
+
+  $ curl -sSL https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+Running your workflows locally with act:
+
+.. code:: bash
+
+  $ act
+
+If you encounter any errors, please refer to `act documentation <https://github.com/nektos/act#readme>`_ for troubleshooting steps.
+
+This pre-validation step can save time by catching common issues early and reducing the likelihood of failing CI checks after pushing your changes.
+
   (nucypher)$ pre-commit install && pre-commit install -t pre-push
 
 
