@@ -582,8 +582,10 @@ class Learner:
     def cycle_teacher_node(self):
         if not self.teacher_nodes:
             self.select_teacher_nodes()
+            self.log.debug("No current teacher node; selecting new teacher nodes.")
         try:
             self._current_teacher_node = self.teacher_nodes.pop()
+            self.log.debug(f"Successfully selected a new teacher node: {self._current_teacher_node}")
         except IndexError:
             error = "Not enough nodes to select a good teacher, Check your network connection then node configuration"
             raise self.NotEnoughTeachers(error)
