@@ -673,7 +673,7 @@ class Learner:
                     raise RuntimeError(
                         f"The reactor isn't running, but you're trying to use it for discovery.  You need to start the Reactor in order to use {self} this way.")
                 else:
-                    raise self.NotEnoughNodes("After {} seconds and {} rounds, didn't find {} nodes. Ensure your network connection is stable and check if the specified nodes are active and reachable.".format(
+                    raise self.NotEnoughTeachers("After {} seconds and {} rounds, didn't find all of the specified nodes. Found {} out of {} nodes. Ensure your network connection is stable, the specified nodes are active and reachable, and check the network's configuration.".format(
                         timeout, rounds_undertaken, number_of_nodes_to_know))
             else:
                 time.sleep(.1)
