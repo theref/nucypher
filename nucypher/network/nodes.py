@@ -560,10 +560,26 @@ class Learner:
         reactor.stop()
 
     def select_teacher_nodes(self):
+        # Attempt counter for selecting teacher nodes retry mechanism
+        if not hasattr(self, '_select_teacher_nodes_attempts'):
+            self._select_teacher_nodes_attempts = 0
+
         nodes_we_know_about = self.known_nodes.shuffled()
 
         if not nodes_we_know_about:
-            raise self.NotEnoughTeachers("Need some nodes to start learning from.")
+            self.log.warn("No nodes are currently known. Waiting before retrying to select teacher nodes...")
+            if self._select_teacher_nodes_attempts < 3:  # Allow up to 3 retries
+                self._select_teacher_nodes_attempts += 1
+                time.sleep(5)  # Wait for 5 seconds before retrying
+                self.select_teacher_nodes()
+            else:
+                raise self.NotEnoughTeachers("Need some nodes to start learning from after retrying.")
+            return
+        else:
+            # Reset attempt counter if nodes are known
+            self._select_teacher_nodes_attempts = 0
+
+        self.teacher_nodes.extend(nodes_we_know_about)
 
         self.teacher_nodes.extend(nodes_we_know_about)
 
