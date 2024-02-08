@@ -589,7 +589,7 @@ class Learner:
             self.cycle_teacher_node()
 
         teacher = self._current_teacher_node
-
+        self.log.info(f"Using teacher node: {teacher}")
         return teacher
 
     def learn_about_nodes_now(self, force=False):
