@@ -797,6 +797,10 @@ class Learner:
         TODO: Does this (and related methods) belong on FleetSensor for portability?
         TODO: A lot of other code can be simplified if this is converted to async def.  That's a project, though.
         """
+        current_teacher = self.current_teacher_node()  # Preemptively get current teacher for check
+        if current_teacher is None:
+            self.log.warning('Attempting to learn from a teacher, but no current teacher is set. Returning early.')
+            return
         remembered = []
 
         if not self.done_seeding:
