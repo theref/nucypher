@@ -611,7 +611,7 @@ class Learner:
                 "Learning loop isn't started; can't learn about nodes now.  You can override this with force=True.")
         elif force:
             # TODO: What if this has been stopped?
-            self.log.info("Learning loop wasn't started; forcing start now.")
+            self.log.info(f"Learning loop wasn't started; forcing start now. Currently, {len(self.known_nodes)} nodes are known.")
             self._learning_task.start(self._SHORT_LEARNING_DELAY, now=True)
 
     def keep_learning_about_nodes(self):
