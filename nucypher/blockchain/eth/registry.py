@@ -74,15 +74,16 @@ class GithubRegistrySource(RegistrySource):
 
     def get_publication_endpoint(self) -> str:
         """Get the GitHub endpoint for the registry publication."""
-        url = f"{self._BASE_URL}/development/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
+        url = f"{self._BASE_URL}/main/nucypher/blockchain/eth/contract_registry/{self.registry_name}"
         return url
 
     def decode(self, response: Response, endpoint: str) -> RegistryData:
         """JSON Decode the registry data."""
         try:
             data = response.json()
-        except JSONDecodeError:
-            raise self.Invalid(f"Invalid registry JSON at '{endpoint}'.")
+        except JSONDecodeError as e:
+            self.logger.error(f"JSON decoding failed for registry at '{endpoint}': {e}")
+            raise self.Invalid(f"Invalid registry JSON at '{endpoint}'. Error: {e}")
         return data
 
     def get(self) -> RegistryData:
