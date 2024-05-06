@@ -31,6 +31,7 @@ from web3.types import TxReceipt
 
 from nucypher.acumen.nicknames import Nickname
 from nucypher.blockchain.eth.agents import (
+    CollectionAgent,
     ContractAgency,
     CoordinatorAgent,
     TACoApplicationAgent,
@@ -44,7 +45,7 @@ from nucypher.blockchain.eth.interfaces import BlockchainInterfaceFactory
 from nucypher.blockchain.eth.models import PHASE1, PHASE2, Coordinator
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.blockchain.eth.signers import Signer
-from nucypher.blockchain.eth.trackers import dkg
+from nucypher.blockchain.eth.trackers import dkg, snitch
 from nucypher.blockchain.eth.trackers.bonding import OperatorBondedTracker
 from nucypher.blockchain.eth.utils import truncate_checksum_address
 from nucypher.crypto.powers import (
@@ -215,8 +216,19 @@ class Operator(BaseActor):
             blockchain_endpoint=polygon_endpoint,
         )
 
+        self.collection_agent = ContractAgency.get_agent(
+            CollectionAgent,
+            registry=registry,
+            blockchain_endpoint=polygon_endpoint,
+        )
+
         # track active onchain rituals
         self.ritual_tracker = dkg.ActiveRitualTracker(
+            operator=self,
+        )
+
+        # track active onchain snitching
+        self.snitch_tracker = snitch.ActiveSnitchTracker(
             operator=self,
         )
 

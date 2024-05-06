@@ -861,6 +861,8 @@ class CoordinatorAgent(EthereumContractAgent):
         return ritual.public_key.to_dkg_public_key()
 
 
+class CollectionAgent(EthereumContractAgent):
+    pass
 class ContractAgency:
     """Where agents live and die."""
 
