@@ -698,6 +698,7 @@ class ConditionLingo(_Serializable):
         conditions expression framework.
         """
         from nucypher.policy.conditions.evm import ContractCondition, RPCCondition
+        from nucypher.policy.conditions.jwt import JWTCondition
         from nucypher.policy.conditions.offchain import JsonApiCondition
         from nucypher.policy.conditions.time import TimeCondition
 
@@ -710,6 +711,7 @@ class ConditionLingo(_Serializable):
             RPCCondition,
             CompoundAccessControlCondition,
             JsonApiCondition,
+            JWTCondition,
             SequentialAccessControlCondition,
             IfThenElseCondition,
         ):
