@@ -59,7 +59,7 @@ class _ConditionField(fields.Dict):
         return instance
 
 
-# CONDITION = TIME | CONTRACT | RPC | JSON_API | COMPOUND | SEQUENTIAL | IF_THEN_ELSE_CONDITION
+# CONDITION = TIME | CONTRACT | RPC | JSON_API | JWT | COMPOUND | SEQUENTIAL | IF_THEN_ELSE_CONDITION
 class ConditionType(Enum):
     """
     Defines the types of conditions that can be evaluated.
@@ -69,6 +69,7 @@ class ConditionType(Enum):
     CONTRACT = "contract"
     RPC = "rpc"
     JSONAPI = "json-api"
+    JWT = "jwt"
     COMPOUND = "compound"
     SEQUENTIAL = "sequential"
     IF_THEN_ELSE = "if-then-else"
