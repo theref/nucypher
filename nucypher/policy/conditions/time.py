@@ -13,6 +13,7 @@ from web3 import Web3
 
 from nucypher.policy.conditions.evm import RPCCall, RPCCondition
 from nucypher.policy.conditions.lingo import ConditionType, ReturnValueTest
+from nucypher.policy.conditions.utils import ConditionProviderManager
 
 
 class TimeRPCCall(RPCCall):
@@ -46,9 +47,18 @@ class TimeRPCCall(RPCCall):
     ):
         super().__init__(chain=chain, method=method, parameters=parameters)
 
+    def execute(self, providers: ConditionProviderManager, **context) -> Any:
+        """Execute time condition using cached latest block."""
+        # Use the cached block from ConditionProviderManager
+        latest_block = providers.get_latest_block(self.chain)
+        return latest_block.timestamp
+
     def _execute(self, w3: Web3, resolved_parameters: List[Any]) -> Any:
-        """Execute onchain read and return result."""
-        # TODO may need to rethink as part of #3051 (multicall work).
+        """Execute onchain read and return result.
+
+        Note: This method is not used when execute() is called with a
+        ConditionProviderManager, but is kept for backwards compatibility.
+        """
         latest_block = w3.eth.get_block("latest")
         return latest_block.timestamp
 
