@@ -122,19 +122,15 @@ def _convert_any_decimals_to_floats(
 
 
 class ConditionProviderManager:
-    # Environment variable for block cache TTL (default 2 seconds)
-    _BLOCK_CACHE_TTL_ENV_VAR = "NUCYPHER_CONDITION_BLOCK_CACHE_TTL"
-    _DEFAULT_BLOCK_CACHE_TTL = 2
+    # Block cache TTL from env var or default 2 seconds
+    from nucypher.config.constants import NUCYPHER_ENVVAR_CONDITION_BLOCK_CACHE_TTL
+
+    _BLOCK_CACHE_TTL = int(os.environ.get(NUCYPHER_ENVVAR_CONDITION_BLOCK_CACHE_TTL, 2))
 
     def __init__(self, providers: Dict[int, List[HTTPProvider]]):
         self.providers = providers
         self.logger = Logger(__name__)
-
-        # Initialize block cache with configurable TTL
-        cache_ttl = int(
-            os.environ.get(self._BLOCK_CACHE_TTL_ENV_VAR, self._DEFAULT_BLOCK_CACHE_TTL)
-        )
-        self._block_cache = TTLCache(ttl=cache_ttl)
+        self._block_cache = TTLCache(ttl=self._BLOCK_CACHE_TTL)
 
     def web3_endpoints(self, chain_id: int) -> Iterator[Web3]:
         rpc_providers = self.providers.get(chain_id, None)
@@ -189,6 +185,9 @@ class ConditionProviderManager:
         to reduce RPC calls when multiple condition checks need the latest
         block timestamp within a short time window.
         """
+        # Purge expired entries to prevent memory leaks
+        self._block_cache.purge_expired()
+
         # Check cache first
         cached = self._block_cache[chain_id]
         if cached is not None:

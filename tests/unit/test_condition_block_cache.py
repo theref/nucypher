@@ -141,9 +141,14 @@ class TestLatestBlockCacheTTL:
         block_data.number = 12345678
         fresh_mock_web3.eth.get_block = MagicMock(return_value=block_data)
 
-        with patch.dict("os.environ", {"NUCYPHER_CONDITION_BLOCK_CACHE_TTL": "1"}):
+        # Since _BLOCK_CACHE_TTL is evaluated at class definition time,
+        # we need to patch the class attribute directly
+        with patch.object(ConditionProviderManager, "_BLOCK_CACHE_TTL", 1):
             providers = {1: [MagicMock()]}
             manager = ConditionProviderManager(providers=providers)
+
+            # Verify the cache was created with our patched TTL
+            assert manager._block_cache.ttl == 1
 
             # Patch web3_endpoints to return our mock directly
             def mock_web3_endpoints(chain_id):
