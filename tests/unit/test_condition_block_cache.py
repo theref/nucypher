@@ -3,7 +3,7 @@ Tests for ConditionProviderManager latest block caching.
 
 These tests verify that:
 1. get_latest_block() caches the result per chain
-2. Cache expires after short TTL (1.5 seconds default)
+2. Cache expires after short TTL (2 seconds default)
 3. Multiple chains are cached independently
 4. TTL is configurable via environment variable
 5. Thread safety under concurrent access
@@ -119,26 +119,35 @@ class TestLatestBlockCacheTTL:
         provider_manager.get_latest_block(chain_id)
         assert provider_manager._mock_web3.eth.get_block.call_count == 1
 
-        # Call within TTL (default 1.5s) - should hit cache
+        # Call within TTL (default 2s) - should hit cache
         time.sleep(0.5)
         provider_manager.get_latest_block(chain_id)
         assert provider_manager._mock_web3.eth.get_block.call_count == 1  # Still 1
 
-        # Call after TTL - should miss cache
-        time.sleep(1.5)
+        # Call after TTL - TTLCache uses second-level precision with maya.now(),
+        # so need to wait TTL + 1 second to guarantee expiration (2 + 1 = 3s)
+        time.sleep(3.1)
         provider_manager.get_latest_block(chain_id)
         assert provider_manager._mock_web3.eth.get_block.call_count == 2  # Now 2
 
-    def test_ttl_configurable_via_environment(self, mock_provider, mock_web3):
+    def test_ttl_configurable_via_environment(self):
         """Cache TTL should be configurable via environment variable."""
-        with patch.dict("os.environ", {"NUCYPHER_CONDITION_BLOCK_CACHE_TTL": "0.5"}):
-            providers = {1: [mock_provider]}
+        # Create fresh mocks for this test to avoid state sharing
+        fresh_mock_web3 = MagicMock()
+        fresh_mock_web3.eth.chain_id = 1
+
+        block_data = MagicMock()
+        block_data.timestamp = int(time.time())
+        block_data.number = 12345678
+        fresh_mock_web3.eth.get_block = MagicMock(return_value=block_data)
+
+        with patch.dict("os.environ", {"NUCYPHER_CONDITION_BLOCK_CACHE_TTL": "1"}):
+            providers = {1: [MagicMock()]}
             manager = ConditionProviderManager(providers=providers)
-            manager._mock_web3 = mock_web3
 
             # Patch web3_endpoints to return our mock directly
             def mock_web3_endpoints(chain_id):
-                yield mock_web3
+                yield fresh_mock_web3
 
             manager.web3_endpoints = mock_web3_endpoints
 
@@ -146,12 +155,13 @@ class TestLatestBlockCacheTTL:
 
             # First call
             manager.get_latest_block(chain_id)
-            assert mock_web3.eth.get_block.call_count == 1
+            assert fresh_mock_web3.eth.get_block.call_count == 1
 
-            # Call after 0.6 seconds - should expire with 0.5s TTL
-            time.sleep(0.6)
+            # Call after 2.1 seconds - TTLCache uses second-level precision with
+            # maya.now(), so need to wait TTL + 1 second to guarantee expiration
+            time.sleep(2.1)
             manager.get_latest_block(chain_id)
-            assert mock_web3.eth.get_block.call_count == 2
+            assert fresh_mock_web3.eth.get_block.call_count == 2
 
 
 class TestLatestBlockCacheThreadSafety:

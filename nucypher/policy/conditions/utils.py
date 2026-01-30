@@ -1,4 +1,5 @@
 import decimal
+import os
 import re
 from collections import OrderedDict
 from http import HTTPStatus
@@ -24,6 +25,7 @@ from nucypher.policy.conditions.exceptions import (
     ReturnValueEvaluationError,
 )
 from nucypher.policy.conditions.types import ContextDict, Lingo
+from nucypher.utilities.cache import TTLCache
 from nucypher.utilities.logging import Logger
 
 __LOGGER = Logger("condition-eval")
@@ -120,23 +122,19 @@ def _convert_any_decimals_to_floats(
 
 
 class ConditionProviderManager:
-    # Environment variable for block cache TTL (default 1.5 seconds)
+    # Environment variable for block cache TTL (default 2 seconds)
     _BLOCK_CACHE_TTL_ENV_VAR = "NUCYPHER_CONDITION_BLOCK_CACHE_TTL"
-    _DEFAULT_BLOCK_CACHE_TTL = 1.5
+    _DEFAULT_BLOCK_CACHE_TTL = 2
 
     def __init__(self, providers: Dict[int, List[HTTPProvider]]):
-        import os
-        import threading
-
         self.providers = providers
         self.logger = Logger(__name__)
 
         # Initialize block cache with configurable TTL
-        self._block_cache_ttl = float(
+        cache_ttl = int(
             os.environ.get(self._BLOCK_CACHE_TTL_ENV_VAR, self._DEFAULT_BLOCK_CACHE_TTL)
         )
-        self._block_cache: Dict[int, tuple] = {}  # {chain_id: (block, expiry_time)}
-        self._block_cache_lock = threading.RLock()
+        self._block_cache = TTLCache(ttl=cache_ttl)
 
     def web3_endpoints(self, chain_id: int) -> Iterator[Web3]:
         rpc_providers = self.providers.get(chain_id, None)
@@ -187,29 +185,20 @@ class ConditionProviderManager:
         """
         Get the latest block for a chain, using cache if available.
 
-        This method caches the latest block for a short TTL (default 1.5s)
+        This method caches the latest block for a short TTL (default 2s)
         to reduce RPC calls when multiple condition checks need the latest
         block timestamp within a short time window.
         """
-        import time
-
-        now = time.time()
-
-        # Check cache first (with lock for thread safety)
-        with self._block_cache_lock:
-            cached = self._block_cache.get(chain_id)
-            if cached is not None:
-                block, expiry = cached
-                if expiry > now:
-                    return block
+        # Check cache first
+        cached = self._block_cache[chain_id]
+        if cached is not None:
+            return cached
 
         # Cache miss or expired - fetch from chain
         for w3 in self.web3_endpoints(chain_id):
             try:
                 block = w3.eth.get_block("latest")
-                # Store in cache with expiry time
-                with self._block_cache_lock:
-                    self._block_cache[chain_id] = (block, now + self._block_cache_ttl)
+                self._block_cache[chain_id] = block
                 return block
             except Exception as e:
                 self.logger.warn(
