@@ -1,5 +1,4 @@
 import decimal
-import os
 import re
 from collections import OrderedDict
 from http import HTTPStatus
@@ -25,7 +24,6 @@ from nucypher.policy.conditions.exceptions import (
     ReturnValueEvaluationError,
 )
 from nucypher.policy.conditions.types import ContextDict, Lingo
-from nucypher.utilities.cache import TTLCache
 from nucypher.utilities.logging import Logger
 
 __LOGGER = Logger("condition-eval")
@@ -122,15 +120,9 @@ def _convert_any_decimals_to_floats(
 
 
 class ConditionProviderManager:
-    # Block cache TTL from env var or default 2 seconds
-    from nucypher.config.constants import NUCYPHER_ENVVAR_CONDITION_BLOCK_CACHE_TTL
-
-    _BLOCK_CACHE_TTL = int(os.environ.get(NUCYPHER_ENVVAR_CONDITION_BLOCK_CACHE_TTL, 2))
-
     def __init__(self, providers: Dict[int, List[HTTPProvider]]):
         self.providers = providers
         self.logger = Logger(__name__)
-        self._block_cache = TTLCache(ttl=self._BLOCK_CACHE_TTL)
 
     def web3_endpoints(self, chain_id: int) -> Iterator[Web3]:
         rpc_providers = self.providers.get(chain_id, None)
@@ -176,36 +168,6 @@ class ConditionProviderManager:
                 expected_chain=chain_id,
                 actual_chain=provider_chain,
             )
-
-    def get_latest_block(self, chain_id: int):
-        """
-        Get the latest block for a chain, using cache if available.
-
-        This method caches the latest block for a short TTL (default 2s)
-        to reduce RPC calls when multiple condition checks need the latest
-        block timestamp within a short time window.
-        """
-        # Purge expired entries to prevent memory leaks
-        self._block_cache.purge_expired()
-
-        # Check cache first
-        cached = self._block_cache[chain_id]
-        if cached is not None:
-            return cached
-
-        # Cache miss or expired - fetch from chain
-        for w3 in self.web3_endpoints(chain_id):
-            try:
-                block = w3.eth.get_block("latest")
-                self._block_cache[chain_id] = block
-                return block
-            except Exception as e:
-                self.logger.warn(
-                    f"Failed to get latest block for chain {chain_id}: {e}"
-                )
-                continue
-
-        raise NoConnectionToChain(chain=chain_id)
 
 
 class ConditionEvalError(Exception):
