@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from nucypher_core import (
     EncryptedThresholdDecryptionRequest,
@@ -13,6 +15,7 @@ from nucypher.blockchain.eth.signers import InMemorySigner
 from nucypher.characters.lawful import Enrico
 from nucypher.crypto.powers import DecryptingRequestPower
 from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 
 
 @pytest.fixture(scope="module")
@@ -31,16 +34,24 @@ def test_decrypting_request_power_public_key_derivation(decrypting_request_power
 
 
 def test_decrypting_request_power_decrypt_encrypted_request(
-    decrypting_request_power, dkg_public_key, time_condition, mocker
+    decrypting_request_power, dkg_public_key, mocker
 ):
     # create enrico
     enrico = Enrico(encrypting_key=dkg_public_key, signer=InMemorySigner())
 
     plaintext = b"Democracy is the worst form of government except for all those other forms that have been tried from time to time"  # -- Unknown via Winston Churchill
 
-    # encrypt
+    # encrypt with always-true WASM condition
+    _wasm_path = (
+        Path(__file__).parents[2]
+        / "wasm_fixtures"
+        / "conditions"
+        / "out"
+        / "always_true.wasm"
+    )
+    _wasm_cond = WasmCondition(wasm_bytes=_wasm_path.read_bytes(), name="always-true")
     threshold_message_kit = enrico.encrypt_for_dkg(
-        plaintext=plaintext, conditions=ConditionLingo(time_condition).to_dict()
+        plaintext=plaintext, conditions=ConditionLingo(_wasm_cond).to_dict()
     )
 
     ritual_id = 144

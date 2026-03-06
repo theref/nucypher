@@ -186,7 +186,7 @@ def test_ritualist(temp_dir_path, testerchain, accounts, dkg_public_key):
     plaintext = b"Records break when you don't"  # Jordan branch ad tagline
     _wasm_path = (
         Path(__file__).parents[2]
-        / "fixtures"
+        / "wasm_fixtures"
         / "conditions"
         / "out"
         / "always_true.wasm"

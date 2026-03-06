@@ -16,7 +16,11 @@ from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from tests.utils.middleware import MockRestMiddleware
 
 _WASM_PATH = (
-    Path(__file__).parents[2] / "fixtures" / "conditions" / "out" / "always_true.wasm"
+    Path(__file__).parents[2]
+    / "wasm_fixtures"
+    / "conditions"
+    / "out"
+    / "always_true.wasm"
 )
 
 

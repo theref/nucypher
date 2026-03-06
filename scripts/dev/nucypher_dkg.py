@@ -371,7 +371,7 @@ def nucypher_dkg(
     _wasm_path = (
         Path(__file__).parents[2]
         / "tests"
-        / "fixtures"
+        / "wasm_fixtures"
         / "conditions"
         / "out"
         / "always_true.wasm"

@@ -1,11 +1,11 @@
 """
 Tests for WASM condition demonstration fixtures (compiled Rust -> .wasm).
 
-These tests load pre-compiled .wasm fixtures from tests/fixtures/conditions/out/
+These tests load pre-compiled .wasm fixtures from tests/wasm_fixtures/conditions/out/
 and exercise them with mocked providers, verifying the full evaluation pipeline
 from WasmEvaluator through host functions.
 
-Rebuild fixtures with: cd tests/fixtures/conditions && bash build.sh
+Rebuild fixtures with: cd tests/wasm_fixtures/conditions && bash build.sh
 """
 
 import json
@@ -20,7 +20,7 @@ from nucypher.policy.conditions.wasm.evaluator import WasmEvaluator
 
 # Path to compiled fixture .wasm files
 FIXTURES_DIR = (
-    Path(__file__).parent.parent.parent.parent / "fixtures" / "conditions" / "out"
+    Path(__file__).parent.parent.parent.parent / "wasm_fixtures" / "conditions" / "out"
 )
 
 # Rust-compiled modules need more memory pages than hand-written WAT modules.
@@ -33,7 +33,7 @@ def _load_fixture(name: str) -> bytes:
     path = FIXTURES_DIR / f"{name}.wasm"
     if not path.exists():
         pytest.skip(
-            f"Fixture {name}.wasm not found. Run: cd tests/fixtures/conditions && bash build.sh"
+            f"Fixture {name}.wasm not found. Run: cd tests/wasm_fixtures/conditions && bash build.sh"
         )
     return path.read_bytes()
 

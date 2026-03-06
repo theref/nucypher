@@ -251,7 +251,7 @@ def test_signing_request_fulfilment(
     # set condition for cohort and chain — use always-true WASM condition
     wasm_path = (
         Path(__file__).parents[2]
-        / "fixtures"
+        / "wasm_fixtures"
         / "conditions"
         / "out"
         / "always_true.wasm"

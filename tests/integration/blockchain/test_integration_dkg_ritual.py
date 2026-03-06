@@ -26,7 +26,11 @@ from tests.mock.interfaces import MockBlockchain
 # The message to encrypt and its conditions
 PLAINTEXT = "peace at dawn"
 _WASM_PATH = (
-    Path(__file__).parents[2] / "fixtures" / "conditions" / "out" / "always_true.wasm"
+    Path(__file__).parents[2]
+    / "wasm_fixtures"
+    / "conditions"
+    / "out"
+    / "always_true.wasm"
 )
 _wasm_condition = WasmCondition(wasm_bytes=_WASM_PATH.read_bytes(), name="always-true")
 CONDITIONS = ConditionLingo(_wasm_condition).to_dict()
