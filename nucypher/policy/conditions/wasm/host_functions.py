@@ -1,12 +1,13 @@
 """
 WASM Host Functions (Extism)
 
-Six host functions registered via Extism's host_fn decorator:
+Seven host functions registered via Extism's host_fn decorator:
 - get_context(key_ptr) -> value_ptr
 - read_chain(args_ptr) -> result_ptr
 - http_get(url_ptr) -> result_ptr
 - verify_jwt(args_ptr) -> i32
 - verify_ecdsa(args_ptr) -> i32
+- verify_ed25519(msg_ptr, sig_ptr, key_ptr) -> i32
 - block_timestamp(chain_id: i32) -> i64
 
 Host functions use Extism's managed memory model:
@@ -281,6 +282,41 @@ def host_verify_ecdsa(plugin, params, results, *user_data):
 
 
 @extism.host_fn(
+    name="verify_ed25519",
+    namespace="taco",
+    signature=(
+        [extism.ValType.PTR, extism.ValType.PTR, extism.ValType.PTR],  # msg, sig, key
+        [extism.ValType.I32],  # 1 if valid, 0 if invalid
+    ),
+)
+def host_verify_ed25519(plugin, params, results, *user_data):
+    """
+    Verify an Ed25519 signature.
+
+    Input: msg_ptr, sig_ptr, key_ptr (Extism PTRs)
+        - msg: raw message bytes
+        - sig: 64-byte Ed25519 signature
+        - key: 32-byte Ed25519 public key
+    Output: 1 if valid, 0 if invalid.
+    """
+    try:
+        message = _read_extism_bytes(plugin, params[0])
+        signature = _read_extism_bytes(plugin, params[1])
+        public_key_bytes = _read_extism_bytes(plugin, params[2])
+
+        from nacl.exceptions import BadSignatureError
+        from nacl.signing import VerifyKey
+
+        verify_key = VerifyKey(public_key_bytes)
+        verify_key.verify(message, signature)
+        results[0] = extism.Val(extism.ValType.I32, 1)
+
+    except (BadSignatureError, Exception) as e:
+        log.warn(f"verify_ed25519 failed: {e}")
+        results[0] = extism.Val(extism.ValType.I32, 0)
+
+
+@extism.host_fn(
     name="block_timestamp",
     namespace="taco",
     signature=(
@@ -324,5 +360,6 @@ ALL_HOST_FUNCTIONS: List[extism.Function] = [
     host_http_get,
     host_verify_jwt,
     host_verify_ecdsa,
+    host_verify_ed25519,
     host_block_timestamp,
 ]

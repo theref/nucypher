@@ -298,6 +298,169 @@ class TestVerifyEcdsa:
         assert result is False
 
 
+class TestVerifyEd25519:
+    """Test the verify_ed25519 host function."""
+
+    def test_valid_signature(self, wat2wasm):
+        """Valid Ed25519 signature returns 1."""
+        from nacl.signing import SigningKey
+
+        signing_key = SigningKey.generate()
+        verify_key = signing_key.verify_key
+        message = b"hello world"
+        signature = signing_key.sign(message).signature
+
+        # Build hex-escaped data strings for WAT
+        msg_hex = "".join(f"\\{b:02x}" for b in message)
+        sig_hex = "".join(f"\\{b:02x}" for b in signature)
+        key_hex = "".join(f"\\{b:02x}" for b in bytes(verify_key))
+
+        wasm = wat2wasm(f"""
+        (module
+          {EXTISM_IMPORTS}
+          (import "taco" "verify_ed25519" (func $verify_ed25519 (param i64 i64 i64) (result i32)))
+          (memory (export "memory") 1)
+          (data (i32.const 1024) "{msg_hex}")
+          (data (i32.const 2048) "{sig_hex}")
+          (data (i32.const 3072) "{key_hex}")
+          {MAKE_EXTISM_STRING}
+          {OUTPUT_BOOL}
+
+          (func (export "evaluate")
+            (local $msg_ptr i64)
+            (local $sig_ptr i64)
+            (local $key_ptr i64)
+            i32.const 1024
+            i32.const {len(message)}
+            call $make_extism_string
+            local.set $msg_ptr
+            i32.const 2048
+            i32.const {len(signature)}
+            call $make_extism_string
+            local.set $sig_ptr
+            i32.const 3072
+            i32.const {len(bytes(verify_key))}
+            call $make_extism_string
+            local.set $key_ptr
+            local.get $msg_ptr
+            local.get $sig_ptr
+            local.get $key_ptr
+            call $verify_ed25519
+            call $output_bool
+          )
+        )
+        """)
+        evaluator = WasmEvaluator()
+        result = evaluator.evaluate(wasm)
+        assert result is True
+
+    def test_invalid_signature(self, wat2wasm):
+        """Invalid Ed25519 signature returns 0."""
+        from nacl.signing import SigningKey
+
+        signing_key = SigningKey.generate()
+        verify_key = signing_key.verify_key
+        message = b"hello world"
+
+        # Use a zeroed-out invalid signature (64 bytes)
+        bad_signature = b"\x00" * 64
+
+        msg_hex = "".join(f"\\{b:02x}" for b in message)
+        sig_hex = "".join(f"\\{b:02x}" for b in bad_signature)
+        key_hex = "".join(f"\\{b:02x}" for b in bytes(verify_key))
+
+        wasm = wat2wasm(f"""
+        (module
+          {EXTISM_IMPORTS}
+          (import "taco" "verify_ed25519" (func $verify_ed25519 (param i64 i64 i64) (result i32)))
+          (memory (export "memory") 1)
+          (data (i32.const 1024) "{msg_hex}")
+          (data (i32.const 2048) "{sig_hex}")
+          (data (i32.const 3072) "{key_hex}")
+          {MAKE_EXTISM_STRING}
+          {OUTPUT_BOOL}
+
+          (func (export "evaluate")
+            (local $msg_ptr i64)
+            (local $sig_ptr i64)
+            (local $key_ptr i64)
+            i32.const 1024
+            i32.const {len(message)}
+            call $make_extism_string
+            local.set $msg_ptr
+            i32.const 2048
+            i32.const {len(bad_signature)}
+            call $make_extism_string
+            local.set $sig_ptr
+            i32.const 3072
+            i32.const {len(bytes(verify_key))}
+            call $make_extism_string
+            local.set $key_ptr
+            local.get $msg_ptr
+            local.get $sig_ptr
+            local.get $key_ptr
+            call $verify_ed25519
+            call $output_bool
+          )
+        )
+        """)
+        evaluator = WasmEvaluator()
+        result = evaluator.evaluate(wasm)
+        assert result is False
+
+    def test_wrong_key(self, wat2wasm):
+        """Signature verified against wrong key returns 0."""
+        from nacl.signing import SigningKey
+
+        signing_key = SigningKey.generate()
+        wrong_key = SigningKey.generate().verify_key
+        message = b"hello world"
+        signature = signing_key.sign(message).signature
+
+        msg_hex = "".join(f"\\{b:02x}" for b in message)
+        sig_hex = "".join(f"\\{b:02x}" for b in signature)
+        key_hex = "".join(f"\\{b:02x}" for b in bytes(wrong_key))
+
+        wasm = wat2wasm(f"""
+        (module
+          {EXTISM_IMPORTS}
+          (import "taco" "verify_ed25519" (func $verify_ed25519 (param i64 i64 i64) (result i32)))
+          (memory (export "memory") 1)
+          (data (i32.const 1024) "{msg_hex}")
+          (data (i32.const 2048) "{sig_hex}")
+          (data (i32.const 3072) "{key_hex}")
+          {MAKE_EXTISM_STRING}
+          {OUTPUT_BOOL}
+
+          (func (export "evaluate")
+            (local $msg_ptr i64)
+            (local $sig_ptr i64)
+            (local $key_ptr i64)
+            i32.const 1024
+            i32.const {len(message)}
+            call $make_extism_string
+            local.set $msg_ptr
+            i32.const 2048
+            i32.const {len(signature)}
+            call $make_extism_string
+            local.set $sig_ptr
+            i32.const 3072
+            i32.const {len(bytes(wrong_key))}
+            call $make_extism_string
+            local.set $key_ptr
+            local.get $msg_ptr
+            local.get $sig_ptr
+            local.get $key_ptr
+            call $verify_ed25519
+            call $output_bool
+          )
+        )
+        """)
+        evaluator = WasmEvaluator()
+        result = evaluator.evaluate(wasm)
+        assert result is False
+
+
 class TestVerifyJwt:
     """Test the verify_jwt host function."""
 
