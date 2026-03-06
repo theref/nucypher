@@ -93,7 +93,7 @@ from nucypher.network.signing import (
     get_signature_request_object,
     sign_signature_request_data,
 )
-from nucypher.policy.conditions.signing.base import SIGNING_CONDITION_OBJECT_CONTEXT_VAR
+from nucypher.policy.conditions.lingo import SIGNING_CONDITION_OBJECT_CONTEXT_VAR
 from nucypher.policy.conditions.utils import (
     ConditionProviderManager,
     evaluate_condition_lingo,

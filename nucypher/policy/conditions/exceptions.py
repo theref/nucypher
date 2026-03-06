@@ -13,25 +13,9 @@ class NoConnectionToChain(RuntimeError):
         super().__init__(message)
 
 
-class ReturnValueEvaluationError(Exception):
-    """Issue with Return Value and Key"""
-
-
 # Context Variable
 class InvalidConditionContext(Exception):
     """Raised when invalid context is encountered."""
-
-
-class RequiredContextVariable(InvalidConditionContext):
-    """No value provided for context variable"""
-
-
-class InvalidContextVariableData(InvalidConditionContext):
-    """Context variable could not be processed"""
-
-
-class ContextVariableVerificationFailed(InvalidConditionContext):
-    """Issue with using the provided context variable."""
 
 
 # Conditions
@@ -41,15 +25,3 @@ class InvalidCondition(ValueError):
 
 class ConditionEvaluationFailed(Exception):
     """Could not evaluate condition."""
-
-
-class RPCExecutionFailed(ConditionEvaluationFailed):
-    """Raised when an exception is raised from an RPC call."""
-
-
-class JsonRequestException(ConditionEvaluationFailed):
-    """Raised when an exception is raised from a JSON request."""
-
-
-class JWTException(ConditionEvaluationFailed):
-    """Raised when an exception is raised when validating a JWT token"""
