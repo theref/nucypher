@@ -1,7 +1,7 @@
 """Type definitions for the condition system."""
 
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 if sys.version_info >= (3, 11):
     from typing import TypedDict
@@ -12,17 +12,9 @@ else:
 ContextDict = Dict[str, Any]
 
 
-# WASM Condition
-class WasmConditionDict(TypedDict):
-    conditionType: str  # "wasm"
-    wasmBytecode: str  # base64-encoded .wasm bytecode
-
-
-# Condition Lingo (versioned wrapper)
-class Lingo(TypedDict):
+# Flat wire format for WASM conditions
+class Lingo(TypedDict, total=False):
     version: str
-    condition: WasmConditionDict
-
-
-# Alias for backward compatibility
-ConditionDict = WasmConditionDict
+    wasm: str  # base64-encoded .wasm bytecode
+    name: str
+    inputs: List[str]  # declared context parameters

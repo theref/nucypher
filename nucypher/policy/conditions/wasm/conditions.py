@@ -8,15 +8,13 @@ with a single type that evaluates arbitrary WASM modules in a sandbox.
 import base64
 import hashlib
 import json
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from nucypher.policy.conditions.exceptions import (
     InvalidCondition,
 )
 from nucypher.policy.conditions.utils import ConditionProviderManager
 from nucypher.policy.conditions.wasm.evaluator import WasmEvaluator
-
-CONDITION_TYPE = "wasm"
 
 
 class WasmCondition:
@@ -28,10 +26,16 @@ class WasmCondition:
         Returns 1 (allow) or 0 (deny).
 
     The module may import host functions from the "taco" namespace:
-      - read_chain, http_get, verify_jwt, verify_ecdsa, block_timestamp, get_context
+      - read_chain, http_get, verify_jwt, verify_ecdsa, block_timestamp,
+        get_context, verify_ed25519
     """
 
-    def __init__(self, wasm_bytes: bytes, name: Optional[str] = None):
+    def __init__(
+        self,
+        wasm_bytes: bytes,
+        name: Optional[str] = None,
+        inputs: Optional[List[str]] = None,
+    ):
         if not wasm_bytes:
             raise InvalidCondition("WASM bytecode cannot be empty")
         if not isinstance(wasm_bytes, (bytes, bytearray)):
@@ -42,11 +46,8 @@ class WasmCondition:
             raise InvalidCondition("Invalid WASM bytecode: missing magic number")
         self.wasm_bytes = wasm_bytes
         self.name = name
+        self.inputs = inputs
         self._evaluator = WasmEvaluator()
-
-    @property
-    def condition_type(self) -> str:
-        return CONDITION_TYPE
 
     @property
     def id(self) -> str:
@@ -74,29 +75,32 @@ class WasmCondition:
         return result, int(result)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize to a dictionary for storage/transmission."""
-        return {
-            "conditionType": CONDITION_TYPE,
-            "wasmBytecode": base64.b64encode(self.wasm_bytes).decode("ascii"),
-            "name": self.name,
+        """Serialize to flat wire format."""
+        d = {
+            "version": "2.0.0",
+            "wasm": base64.b64encode(self.wasm_bytes).decode("ascii"),
         }
+        if self.name:
+            d["name"] = self.name
+        if self.inputs:
+            d["inputs"] = self.inputs
+        return d
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WasmCondition":
-        """Deserialize from a dictionary."""
-        condition_type = data.get("conditionType")
-        if condition_type != CONDITION_TYPE:
-            raise InvalidCondition(
-                f"Expected conditionType '{CONDITION_TYPE}', got '{condition_type}'"
-            )
-        bytecode_b64 = data.get("wasmBytecode")
+        """Deserialize from flat wire format."""
+        bytecode_b64 = data.get("wasm")
         if not bytecode_b64:
-            raise InvalidCondition("Missing wasmBytecode field")
+            raise InvalidCondition("Missing wasm field")
         try:
             wasm_bytes = base64.b64decode(bytecode_b64)
         except Exception as e:
-            raise InvalidCondition(f"Invalid base64 in wasmBytecode: {e}") from e
-        return cls(wasm_bytes=wasm_bytes, name=data.get("name"))
+            raise InvalidCondition(f"Invalid base64 in wasm: {e}") from e
+        return cls(
+            wasm_bytes=wasm_bytes,
+            name=data.get("name"),
+            inputs=data.get("inputs"),
+        )
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())

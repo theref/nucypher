@@ -24,14 +24,12 @@ class ConditionLingo:
     """
     A versioned wrapper around a WasmCondition.
 
-    Lingo format:
+    Flat wire format:
     {
         "version": "2.0.0",
-        "condition": {
-            "conditionType": "wasm",
-            "wasmBytecode": "<base64-encoded .wasm bytecode>",
-            "name": "<optional name>"
-        }
+        "wasm": "<base64-encoded .wasm bytecode>",
+        "name": "optional-name",
+        "inputs": [":param1", ":param2"]
     }
     """
 
@@ -53,18 +51,12 @@ class ConditionLingo:
         if not version:
             raise InvalidConditionLingo("Missing version in condition lingo")
 
-        condition_data = data.get("condition")
-        if not condition_data:
-            raise InvalidConditionLingo("Missing condition in condition lingo")
-
-        condition_type = condition_data.get("conditionType")
-        if condition_type != "wasm":
-            raise InvalidConditionLingo(
-                f"Unsupported condition type: '{condition_type}'. Only 'wasm' is supported."
-            )
+        wasm_b64 = data.get("wasm")
+        if not wasm_b64:
+            raise InvalidConditionLingo("Missing wasm field in condition lingo")
 
         try:
-            condition = WasmCondition.from_dict(condition_data)
+            condition = WasmCondition.from_dict(data)
         except Exception as e:
             raise InvalidConditionLingo(f"Invalid WASM condition: {e}") from e
 
@@ -81,10 +73,7 @@ class ConditionLingo:
         return cls.from_json(data.decode("utf-8"))
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "version": self.version,
-            "condition": self.condition.to_dict(),
-        }
+        return self.condition.to_dict()
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())

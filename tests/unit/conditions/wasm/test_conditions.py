@@ -19,9 +19,16 @@ class TestWasmCondition:
 
     def test_create(self, wasm_always_true):
         cond = WasmCondition(wasm_bytes=wasm_always_true, name="test")
-        assert cond.condition_type == "wasm"
         assert cond.name == "test"
         assert len(cond.id) == 16
+
+    def test_create_with_inputs(self, wasm_always_true):
+        cond = WasmCondition(
+            wasm_bytes=wasm_always_true,
+            name="test",
+            inputs=[":userAddress", ":chainId"],
+        )
+        assert cond.inputs == [":userAddress", ":chainId"]
 
     def test_verify_true(self, wasm_always_true):
         cond = WasmCondition(wasm_bytes=wasm_always_true)
@@ -60,12 +67,30 @@ class TestWasmCondition:
 class TestWasmConditionSerialization:
     """Test serialization/deserialization round-trips."""
 
-    def test_to_dict(self, wasm_always_true):
+    def test_to_dict_flat_format(self, wasm_always_true):
         cond = WasmCondition(wasm_bytes=wasm_always_true, name="test")
         d = cond.to_dict()
-        assert d["conditionType"] == "wasm"
-        assert "wasmBytecode" in d
+        assert d["version"] == "2.0.0"
+        assert "wasm" in d
         assert d["name"] == "test"
+        # No old fields
+        assert "conditionType" not in d
+        assert "wasmBytecode" not in d
+        assert "condition" not in d
+
+    def test_to_dict_with_inputs(self, wasm_always_true):
+        cond = WasmCondition(
+            wasm_bytes=wasm_always_true,
+            inputs=[":userAddress"],
+        )
+        d = cond.to_dict()
+        assert d["inputs"] == [":userAddress"]
+
+    def test_to_dict_omits_none_fields(self, wasm_always_true):
+        cond = WasmCondition(wasm_bytes=wasm_always_true)
+        d = cond.to_dict()
+        assert "name" not in d
+        assert "inputs" not in d
 
     def test_from_dict(self, wasm_always_true):
         cond = WasmCondition(wasm_bytes=wasm_always_true, name="test")
@@ -85,20 +110,16 @@ class TestWasmConditionSerialization:
         cond2 = WasmCondition.from_bytes(b)
         assert cond == cond2
 
-    def test_from_dict_wrong_type(self):
-        with pytest.raises(InvalidCondition, match="Expected conditionType"):
-            WasmCondition.from_dict({"conditionType": "contract"})
-
-    def test_from_dict_missing_bytecode(self):
-        with pytest.raises(InvalidCondition, match="Missing wasmBytecode"):
-            WasmCondition.from_dict({"conditionType": "wasm"})
+    def test_from_dict_missing_wasm(self):
+        with pytest.raises(InvalidCondition, match="Missing wasm"):
+            WasmCondition.from_dict({"version": "2.0.0"})
 
     def test_from_dict_invalid_base64(self):
         with pytest.raises(InvalidCondition, match="Invalid base64"):
             WasmCondition.from_dict(
                 {
-                    "conditionType": "wasm",
-                    "wasmBytecode": "not-valid-base64!!!",
+                    "version": "2.0.0",
+                    "wasm": "not-valid-base64!!!",
                 }
             )
 
@@ -138,10 +159,15 @@ class TestConditionLingo:
         lingo = ConditionLingo(condition=cond)
         assert lingo.eval() is False
 
-    def test_from_dict(self, wasm_always_true):
+    def test_from_dict_flat_format(self, wasm_always_true):
         cond = WasmCondition(wasm_bytes=wasm_always_true)
         lingo = ConditionLingo(condition=cond)
         d = lingo.to_dict()
+
+        # Verify flat format
+        assert "wasm" in d
+        assert "condition" not in d
+        assert "conditionType" not in d
 
         lingo2 = ConditionLingo.from_dict(d)
         assert lingo2.version == lingo.version
@@ -169,18 +195,18 @@ class TestConditionLingo:
 
     def test_from_dict_missing_version(self):
         with pytest.raises(InvalidConditionLingo, match="Missing version"):
-            ConditionLingo.from_dict({"condition": {}})
+            ConditionLingo.from_dict({"wasm": "AGFzbQEAAAA="})
 
-    def test_from_dict_missing_condition(self):
-        with pytest.raises(InvalidConditionLingo, match="Missing condition"):
+    def test_from_dict_missing_wasm(self):
+        with pytest.raises(InvalidConditionLingo, match="Missing wasm"):
             ConditionLingo.from_dict({"version": "2.0.0"})
 
-    def test_from_dict_unsupported_type(self):
-        with pytest.raises(InvalidConditionLingo, match="Unsupported condition type"):
+    def test_from_dict_invalid_wasm(self):
+        with pytest.raises(InvalidConditionLingo, match="Invalid WASM"):
             ConditionLingo.from_dict(
                 {
                     "version": "2.0.0",
-                    "condition": {"conditionType": "contract"},
+                    "wasm": "not-valid!!!",
                 }
             )
 
@@ -207,7 +233,7 @@ class TestEvaluateConditionLingo:
             evaluate_condition_lingo(
                 condition_lingo={
                     "version": "2.0.0",
-                    "condition": {"conditionType": "invalid"},
+                    "wasm": "not-valid!!!",
                 }
             )
         assert exc_info.value.status_code == 400
