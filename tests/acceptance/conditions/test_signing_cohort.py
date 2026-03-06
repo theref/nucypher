@@ -21,9 +21,8 @@ from py_ecc.secp256k1 import secp256k1
 from py_ecc.secp256k1.secp256k1 import bytes_to_int
 from web3 import Web3
 
-from nucypher.policy.conditions.auth.evm import EIP1271Auth
-
 COHORT_SIZE = 5
+EIP1271_MAGIC_VALUE_BYTES = b"\x16&\xbaz"  # 0x1626ba7e
 COHORT_THRESHOLD = 3
 
 
@@ -139,7 +138,7 @@ def test_simple_data_message_signing(
 
     assert (
         multisig_contract_wallet.isValidSignature(message_hash, aggregated_signatures)
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
 
     # invalid signature bytes
@@ -147,7 +146,7 @@ def test_simple_data_message_signing(
         multisig_contract_wallet.isValidSignature(
             message_hash, os.urandom(len(aggregated_signatures))
         )
-        != EIP1271Auth.MAGIC_VALUE_BYTES
+        != EIP1271_MAGIC_VALUE_BYTES
     )
 
 
@@ -240,12 +239,12 @@ def test_saved_data_message_signing(
         multisig_contract_wallet.isValidSignature(
             message_hash, os.urandom(len(aggregated_signatures))
         )
-        != EIP1271Auth.MAGIC_VALUE_BYTES
+        != EIP1271_MAGIC_VALUE_BYTES
     )
 
     assert (
         multisig_contract_wallet.isValidSignature(message_hash, aggregated_signatures)
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
 
     # save signatures
@@ -255,7 +254,7 @@ def test_saved_data_message_signing(
 
     assert (
         multisig_contract_wallet.isValidSignature(message_hash, aggregated_signatures)
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
 
     # still invalid if incorrect signature provided for cached message
@@ -263,7 +262,7 @@ def test_saved_data_message_signing(
         multisig_contract_wallet.isValidSignature(
             message_hash, os.urandom(len(aggregated_signatures))
         )
-        != EIP1271Auth.MAGIC_VALUE_BYTES
+        != EIP1271_MAGIC_VALUE_BYTES
     )
 
 
@@ -296,7 +295,7 @@ def test_cohort_handover(
 
     assert (
         multisig_contract_wallet.isValidSignature(message_hash, aggregated_signatures)
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
     assert multisig_contract_wallet.getSigners() == [
         ursula.operator_address for ursula in signing_cohort
@@ -319,7 +318,7 @@ def test_cohort_handover(
     # check old saved signature
     assert (
         multisig_contract_wallet.isValidSignature(message_hash, aggregated_signatures)
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
 
     # signature not ignored since old signature was saved
@@ -327,7 +326,7 @@ def test_cohort_handover(
         multisig_contract_wallet.isValidSignature(
             message_hash, os.urandom(len(aggregated_signatures))
         )
-        != EIP1271Auth.MAGIC_VALUE_BYTES
+        != EIP1271_MAGIC_VALUE_BYTES
     )
 
     new_data = "Labor omnia vincit."
@@ -343,7 +342,7 @@ def test_cohort_handover(
         multisig_contract_wallet.isValidSignature(
             new_message_hash, b"".join(old_cohort_new_signatures)
         )
-        != EIP1271Auth.MAGIC_VALUE_BYTES
+        != EIP1271_MAGIC_VALUE_BYTES
     )
 
     # new signers can sign
@@ -359,7 +358,7 @@ def test_cohort_handover(
         multisig_contract_wallet.isValidSignature(
             new_message_hash, b"".join(new_signatures)
         )
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
 
 
