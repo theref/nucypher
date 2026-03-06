@@ -1,0 +1,63 @@
+[package]
+name = "taco-condition-fixtures"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+extism-pdk = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# --- Basic fixtures ---
+
+[[bin]]
+name = "always_true"
+path = "src/bin/always_true.rs"
+
+[[bin]]
+name = "always_false"
+path = "src/bin/always_false.rs"
+
+[[bin]]
+name = "check_context"
+path = "src/bin/check_context.rs"
+
+# --- Host function fixtures (Task 10) ---
+
+[[bin]]
+name = "read_chain_balance"
+path = "src/bin/read_chain_balance.rs"
+
+[[bin]]
+name = "check_block_timestamp"
+path = "src/bin/check_block_timestamp.rs"
+
+[[bin]]
+name = "fetch_https"
+path = "src/bin/fetch_https.rs"
+
+[[bin]]
+name = "verify_ecdsa_sig"
+path = "src/bin/verify_ecdsa_sig.rs"
+
+[[bin]]
+name = "verify_jwt_token"
+path = "src/bin/verify_jwt_token.rs"
+
+# --- Demonstration fixtures (Tasks 11-12) ---
+
+[[bin]]
+name = "userop_batch_validator"
+path = "src/bin/userop_batch_validator.rs"
+
+[[bin]]
+name = "erc20_token_gate"
+path = "src/bin/erc20_token_gate.rs"
+
+[[bin]]
+name = "nft_ownership"
+path = "src/bin/nft_ownership.rs"
+
+[[bin]]
+name = "time_locked_access"
+path = "src/bin/time_locked_access.rs"
