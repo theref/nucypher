@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from nucypher_core import Conditions
@@ -6,17 +7,28 @@ from nucypher_core import Conditions
 from nucypher.characters.lawful import Ursula
 from nucypher.policy.conditions.exceptions import (
     ConditionEvaluationFailed,
-    ContextVariableVerificationFailed,
     InvalidCondition,
     InvalidConditionLingo,
-    InvalidContextVariableData,
     NoConnectionToChain,
-    RequiredContextVariable,
-    ReturnValueEvaluationError,
 )
-from nucypher.policy.conditions.lingo import ConditionLingo, ConditionType
-from tests.constants import TESTERCHAIN_CHAIN_ID
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from tests.utils.middleware import MockRestMiddleware
+
+_WASM_PATH = (
+    Path(__file__).parents[2]
+    / "wasm_fixtures"
+    / "conditions"
+    / "out"
+    / "always_true.wasm"
+)
+
+
+def _make_wasm_conditions_json():
+    wasm_condition = WasmCondition(
+        wasm_bytes=_WASM_PATH.read_bytes(), name="always-true"
+    )
+    return json.dumps(ConditionLingo(wasm_condition).to_dict())
 
 
 def _policy_info_kwargs(enacted_policy):
@@ -37,28 +49,7 @@ def test_single_retrieve_with_truthy_conditions(
     bob.remember_node(ursulas[0])
     bob.start_learning_loop()
 
-    conditions = {
-        "version": ConditionLingo.VERSION,
-        "condition": {
-            "conditionType": ConditionType.COMPOUND.value,
-            "operator": "and",
-            "operands": [
-                {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 0, "comparator": ">"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-                {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 99999999999999999, "comparator": "<"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-            ],
-        },
-    }
-    json_conditions = json.dumps(conditions)
+    json_conditions = _make_wasm_conditions_json()
     rust_conditions = Conditions(json_conditions)
     message_kits = [MessageKit(enacted_policy.public_key, b"lab", rust_conditions)]
 
@@ -82,19 +73,7 @@ def test_single_retrieve_with_falsy_conditions(
     reencrypt_http_spy = mocker.spy(MockRestMiddleware, 'reencrypt')
 
     # not actually used for eval, but satisfies serializers
-    conditions = Conditions(
-        json.dumps(
-            {
-                "version": ConditionLingo.VERSION,
-                "condition": {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 0, "comparator": ">"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-            }
-        )
-    )
+    conditions = Conditions(_make_wasm_conditions_json())
 
     bob.start_learning_loop()
 
@@ -110,18 +89,14 @@ def test_single_retrieve_with_falsy_conditions(
     assert isinstance(reencrypt_http_spy.spy_exception, MockRestMiddleware.Unauthorized)
 
 
-FAILURE_MESSAGE = "I’ve failed over and over and over again in my life. And that is why I succeed."  # -- Michael Jordan
+FAILURE_MESSAGE = "I've failed over and over and over again in my life. And that is why I succeed."  # -- Michael Jordan
 
 FAILURE_CASE_EXCEPTION_CODE_MATCHING = [
-    # (condition exception class, exception parameters, middleware exception class)
-    (ReturnValueEvaluationError, MockRestMiddleware.BadRequest),
+    # (condition exception class, middleware exception class)
     (InvalidConditionLingo, MockRestMiddleware.BadRequest),
     (InvalidCondition, MockRestMiddleware.BadRequest),
-    (RequiredContextVariable, MockRestMiddleware.BadRequest),
-    (InvalidContextVariableData, MockRestMiddleware.BadRequest),
-    (ContextVariableVerificationFailed, MockRestMiddleware.Unauthorized),
-    (NoConnectionToChain, MockRestMiddleware.UnexpectedResponse),
     (ConditionEvaluationFailed, MockRestMiddleware.BadRequest),
+    (NoConnectionToChain, MockRestMiddleware.UnexpectedResponse),
     (ValueError, MockRestMiddleware.UnexpectedResponse),
 ]
 
@@ -146,19 +121,7 @@ def test_middleware_handling_of_failed_condition_responses(
     reencrypt_http_spy = mocker.spy(MockRestMiddleware, "reencrypt")
 
     # not actually used for eval, but satisfies serializers
-    conditions = Conditions(
-        json.dumps(
-            {
-                "version": ConditionLingo.VERSION,
-                "condition": {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 0, "comparator": ">"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-            }
-        )
-    )
+    conditions = Conditions(_make_wasm_conditions_json())
 
     bob.start_learning_loop()
 

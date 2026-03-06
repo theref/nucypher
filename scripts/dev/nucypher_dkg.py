@@ -18,7 +18,8 @@ from nucypher.blockchain.eth.signers import InMemorySigner, Signer
 from nucypher.characters.lawful import Bob, Enrico
 from nucypher.cli.types import EIP55_CHECKSUM_ADDRESS
 from nucypher.crypto.powers import TransactingPower
-from nucypher.policy.conditions.lingo import ConditionLingo, ConditionType
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from nucypher.utilities.emitters import StdoutEmitter
 from nucypher.utilities.logging import GlobalLoggerSettings
 from tests.constants import DEFAULT_TEST_ENRICO_PRIVATE_KEY, GLOBAL_ALLOW_LIST
@@ -364,15 +365,19 @@ def nucypher_dkg(
     """
     # -- Dhammapada
 
-    CONDITIONS = {
-        "version": ConditionLingo.VERSION,
-        "condition": {
-            "conditionType": ConditionType.TIME.value,
-            "returnValueTest": {"value": 0, "comparator": ">"},
-            "method": "blocktime",
-            "chain": child_application_agent.blockchain.client.chain_id,
-        },
-    }
+    # TODO: Replace with a real WASM condition for production use
+    from pathlib import Path
+
+    _wasm_path = (
+        Path(__file__).parents[2]
+        / "tests"
+        / "wasm_fixtures"
+        / "conditions"
+        / "out"
+        / "always_true.wasm"
+    )
+    _wasm_cond = WasmCondition(wasm_bytes=_wasm_path.read_bytes(), name="always-true")
+    CONDITIONS = ConditionLingo(_wasm_cond).to_dict()
 
     encrypting_key = DkgPublicKey.from_bytes(bytes(ritual.public_key))
 

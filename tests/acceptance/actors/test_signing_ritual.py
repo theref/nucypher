@@ -1,30 +1,29 @@
 import json
 import random
 import time
+from pathlib import Path
 
 import pytest
 import pytest_twisted
-from hexbytes import HexBytes
 from nucypher_core import (
     AAVersion,
     Context,
     PackedUserOperation,
     PackedUserOperationSignatureRequest,
-    UserOperation,
     UserOperationSignatureRequest,
 )
 
 from nucypher.blockchain.eth.models import SigningCoordinator
 from nucypher.characters.lawful import Ursula
-from nucypher.policy.conditions.auth.evm import EIP1271Auth
-from nucypher.policy.conditions.lingo import ConditionLingo, ReturnValueTest
-from nucypher.policy.conditions.signing.base import SigningObjectAttributeCondition
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from nucypher.utilities.erc4337_utils import sign_packed_user_operation
 from tests.utils.erc4337 import (
-    COMMON_REQUIRED_USER_OP_GAS_VALUES,
     create_erc20_transfer,
     create_eth_transfer,
 )
+
+EIP1271_MAGIC_VALUE_BYTES = b"\x16&\xbaz"  # 0x1626ba7e
 
 
 @pytest.fixture(scope="module")
@@ -199,7 +198,6 @@ def test_signing_request_fulfilment(
     cohort,
     nucypher_dependency,
     ritual_initiator,
-    time_condition,
 ):
     bob.start_learning_loop(now=True)
 
@@ -250,8 +248,16 @@ def test_signing_request_fulfilment(
     print("===================== SIGNING FAILED (AS EXPECTED) =====================")
 
     print("==================== SET CONDITION AND TEST SIGNING ====================")
-    # set condition for cohort and chain
-    on_chain_condition_lingo = ConditionLingo(time_condition)
+    # set condition for cohort and chain — use always-true WASM condition
+    wasm_path = (
+        Path(__file__).parents[2]
+        / "wasm_fixtures"
+        / "conditions"
+        / "out"
+        / "always_true.wasm"
+    )
+    always_true = WasmCondition(wasm_bytes=wasm_path.read_bytes(), name="always-true")
+    on_chain_condition_lingo = ConditionLingo(always_true)
     signing_coordinator_agent.set_signing_cohort_conditions(
         cohort_id,
         chain.chain_id,
@@ -286,8 +292,8 @@ def test_signing_request_fulfilment(
     result = multisig.isValidSignature(expected_hash, aggregated_signature)
 
     assert (
-        result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid signature: {result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
+        result == EIP1271_MAGIC_VALUE_BYTES
+    ), f"Invalid signature: {result} != {EIP1271_MAGIC_VALUE_BYTES}"
     print("===================== SIGNING SUCCESSFUL =====================")
     yield
 
@@ -433,8 +439,8 @@ def test_user_op_signing_request_eth_transfer(
     )
     eth_result = multisig.isValidSignature(expected_hash, aggregated_signature)
     assert (
-        eth_result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid ETH transfer signature: {eth_result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
+        eth_result == EIP1271_MAGIC_VALUE_BYTES
+    ), f"Invalid ETH transfer signature: {eth_result} != {EIP1271_MAGIC_VALUE_BYTES}"
     print("===================== SIGNING SUCCESSFUL =====================")
 
     yield
@@ -516,8 +522,8 @@ def test_user_op_signing_request_erc20_transfer(
     )
     erc20_result = multisig.isValidSignature(expected_hash, aggregated_signature)
     assert (
-        erc20_result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid ERC20 transfer signature: {erc20_result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
+        erc20_result == EIP1271_MAGIC_VALUE_BYTES
+    ), f"Invalid ERC20 transfer signature: {erc20_result} != {EIP1271_MAGIC_VALUE_BYTES}"
     print("===================== SIGNING SUCCESSFUL =====================")
 
     yield
@@ -595,154 +601,8 @@ def test_packed_user_op_signing_request(
     )
     erc20_result = multisig.isValidSignature(expected_hash, aggregated_signature)
     assert (
-        erc20_result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid ERC20 transfer signature: {erc20_result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
+        erc20_result == EIP1271_MAGIC_VALUE_BYTES
+    ), f"Invalid ERC20 transfer signature: {erc20_result} != {EIP1271_MAGIC_VALUE_BYTES}"
     print("===================== SIGNING SUCCESSFUL =====================")
-
-    yield
-
-
-#
-# This tests intentionally modifies ths condition used for the cohort; leave as last
-# test unless you intend to modify the cohort conditions.
-#
-@pytest_twisted.inlineCallbacks
-@pytest.mark.parametrize("aa_version", [AAVersion.V08, AAVersion.MDT])
-def test_signing_request_with_signing_object_attribute_condition(
-    aa_version,
-    chain,
-    bob,
-    accounts,
-    signing_coordinator_agent,
-    signing_coordinator_child,
-    initiator,
-    cohort_id,
-    cohort,
-    nucypher_dependency,
-    ritual_initiator,
-):
-
-    signing_cohort = signing_coordinator_agent.get_signing_cohort(cohort_id)
-
-    # Test create_erc20_transfer helper
-    # Using a mock ERC20 token address
-    mock_token_address = "0x1234567890123456789012345678901234567890"
-    erc20_transfer_op = create_erc20_transfer(
-        sender=accounts[0].address,
-        nonce=2,
-        token=mock_token_address,
-        to=accounts[1].address,
-        amount=1000000000000000000,  # 1 token (assuming 18 decimals)
-    )
-
-    # set condition
-    signing_object_condition = SigningObjectAttributeCondition(
-        attribute_name="callData",
-        return_value_test=ReturnValueTest(
-            comparator="==",
-            value=HexBytes(erc20_transfer_op.call_data).hex(),
-        ),
-    )
-    on_chain_condition_lingo = ConditionLingo(signing_object_condition)
-
-    signing_coordinator_agent.set_signing_cohort_conditions(
-        cohort_id,
-        chain.chain_id,
-        on_chain_condition_lingo,
-        ritual_initiator.transacting_power,
-    )
-
-    packed_user_op = PackedUserOperation.from_user_operation(erc20_transfer_op)
-    expected_hash, _ = sign_packed_user_operation(
-        packed_user_op, ritual_initiator.transacting_power, aa_version, chain.chain_id
-    )
-
-    multisig = get_cohort_multisig(
-        cohort_id, nucypher_dependency, signing_coordinator_child
-    )
-
-    #
-    # Test signing the user op
-    #
-    print(
-        "==================== TESTING USER OP SIGNING OBJECT ATTR CONDITION ===================="
-    )
-    user_op_erc20_signing_request = UserOperationSignatureRequest(
-        user_op=erc20_transfer_op,
-        aa_version=aa_version,
-        chain_id=chain.chain_id,
-        cohort_id=cohort_id,
-        context=None,
-    )
-
-    responses = yield bob.request_threshold_signatures(
-        signing_request=user_op_erc20_signing_request,
-    )
-
-    # Verify ERC20 transfer signatures
-    assert len(responses) >= signing_cohort.threshold
-    aggregated_signature = b""
-    for r in responses:
-        assert expected_hash == r.hash, "All hashes must be the same"
-        aggregated_signature += r.signature
-
-    erc20_result = multisig.isValidSignature(expected_hash, aggregated_signature)
-    assert (
-        erc20_result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid user op signature: {erc20_result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
-
-    #
-    # Test signing the packed user op transfer operation
-    #
-    print(
-        "==================== TESTING PACKED USER OP SIGNING OBJECT ATTR CONDITION ===================="
-    )
-    packed_user_op_erc20_signing_request = PackedUserOperationSignatureRequest(
-        packed_user_op=PackedUserOperation.from_user_operation(erc20_transfer_op),
-        aa_version=aa_version,
-        chain_id=chain.chain_id,
-        cohort_id=cohort_id,
-        context=None,
-    )
-
-    responses = yield bob.request_threshold_signatures(
-        signing_request=packed_user_op_erc20_signing_request,
-    )
-
-    # Verify ERC20 transfer signatures
-    assert len(responses) >= signing_cohort.threshold
-    aggregated_signature = b""
-    for r in responses:
-        assert expected_hash == r.hash, "All hashes must be the same"
-        aggregated_signature += r.signature
-
-    erc20_result = multisig.isValidSignature(expected_hash, aggregated_signature)
-    assert (
-        erc20_result == EIP1271Auth.MAGIC_VALUE_BYTES
-    ), f"Invalid packed user op signature: {erc20_result} != {EIP1271Auth.MAGIC_VALUE_BYTES}"
-
-    print("===================== SIGNING SUCCESSFUL =====================")
-
-    # Modify call_data to fail attribute condition
-    erc20_transfer_op_failed_call_data = UserOperation(
-        sender=erc20_transfer_op.sender,
-        nonce=erc20_transfer_op.nonce,
-        call_data=b"1234",  # Modify call_data to fail attribute condition
-        **COMMON_REQUIRED_USER_OP_GAS_VALUES,
-    )
-
-    failure_user_op_erc20_signing_request = UserOperationSignatureRequest(
-        user_op=erc20_transfer_op_failed_call_data,
-        aa_version=aa_version,
-        chain_id=chain.chain_id,
-        cohort_id=cohort_id,
-        context=None,
-    )
-    with pytest.raises(Ursula.NotEnoughUrsulas, match="Conditions not satisfied"):
-        _ = yield bob.request_threshold_signatures(
-            signing_request=failure_user_op_erc20_signing_request,
-        )
-
-    print("===================== SIGNING FAILED =====================")
 
     yield

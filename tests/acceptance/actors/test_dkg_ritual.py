@@ -1,30 +1,18 @@
-import os
 import random
 import time
+from pathlib import Path
 from unittest.mock import ANY, patch
 
 import pytest
 import pytest_twisted
-from hexbytes import HexBytes
 from prometheus_client import REGISTRY
 
-from nucypher.blockchain.eth.agents import ContractAgency, SubscriptionManagerAgent
-from nucypher.blockchain.eth.constants import NULL_ADDRESS
 from nucypher.blockchain.eth.models import Coordinator
 from nucypher.blockchain.eth.signers.software import InMemorySigner
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.network.concurrency import ThresholdDecryptionClient
-from nucypher.policy.conditions.evm import ContractCondition, RPCCondition
-from nucypher.policy.conditions.lingo import (
-    ConditionLingo,
-    ConditionVariable,
-    NotCompoundCondition,
-    OrCompoundCondition,
-    ReturnValueTest,
-    SequentialCondition,
-)
-from nucypher.policy.conditions.time import TimeCondition
-from tests.constants import TEST_ETH_PROVIDER_URI, TESTERCHAIN_CHAIN_ID
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 
 
 @pytest.fixture(scope="module")
@@ -58,67 +46,17 @@ def signer():
 
 
 @pytest.fixture(scope="module")
-def condition(test_registry):
-    time_condition = TimeCondition(
-        chain=TESTERCHAIN_CHAIN_ID,
-        return_value_test=ReturnValueTest(comparator=">", value=0),
+def condition():
+    wasm_path = (
+        Path(__file__).parents[2]
+        / "wasm_fixtures"
+        / "conditions"
+        / "out"
+        / "always_true.wasm"
     )
-    rpc_condition = RPCCondition(
-        chain=TESTERCHAIN_CHAIN_ID,
-        method="eth_getBalance",
-        return_value_test=ReturnValueTest(comparator="==", value=0),
-        parameters=["0x0000000000000000000000000000000000000007"],  # random account
-    )
-
-    subscription_manager = ContractAgency.get_agent(
-        SubscriptionManagerAgent,
-        registry=test_registry,
-        blockchain_endpoint=TEST_ETH_PROVIDER_URI,
-    )
-    contract_condition = ContractCondition(
-        contract_address=subscription_manager.contract.address,
-        function_abi=subscription_manager.contract.get_function_by_name(
-            "getPolicy"
-        ).abi,
-        method="getPolicy",
-        chain=TESTERCHAIN_CHAIN_ID,
-        return_value_test=ReturnValueTest(
-            comparator="==", value=[NULL_ADDRESS, 0, 0, 0, NULL_ADDRESS]
-        ),
-        parameters=[HexBytes(os.urandom(16)).hex()],
-    )
-
-    or_condition = OrCompoundCondition(
-        operands=[time_condition, rpc_condition, contract_condition]
-    )
-
-    and_condition = OrCompoundCondition(
-        operands=[time_condition, rpc_condition, contract_condition]
-    )
-
-    not_not_condition = NotCompoundCondition(
-        operand=NotCompoundCondition(operand=rpc_condition)
-    )
-
-    sequential_condition = SequentialCondition(
-        condition_variables=[
-            ConditionVariable("rpc", rpc_condition),
-            ConditionVariable("contract", contract_condition),
-        ]
-    )
-
-    conditions = [
-        time_condition,
-        rpc_condition,
-        contract_condition,
-        or_condition,
-        and_condition,
-        not_not_condition,
-        sequential_condition,
-    ]
-
-    condition_to_use = random.choice(conditions)
-    return ConditionLingo(condition_to_use).to_dict()
+    wasm_bytes = wasm_path.read_bytes()
+    wasm_condition = WasmCondition(wasm_bytes=wasm_bytes, name="always-true")
+    return ConditionLingo(wasm_condition).to_dict()
 
 
 @pytest.fixture(scope="module", autouse=True)

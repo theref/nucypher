@@ -1,5 +1,4 @@
 import contextlib
-import json
 import os
 import shutil
 import tempfile
@@ -12,10 +11,8 @@ import maya
 import pytest
 from click.testing import CliRunner
 from eth_account import Account
-from eth_account.messages import encode_typed_data
 from eth_utils import to_checksum_address
 from nucypher_core.ferveo import AggregatedTranscript, DkgPublicKey, Keypair, Validator
-from siwe import SiweMessage
 from twisted.internet.task import Clock
 from web3 import HTTPProvider, Web3
 
@@ -25,7 +22,7 @@ from nucypher.blockchain.eth.interfaces import (
     BlockchainInterface,
     BlockchainInterfaceFactory,
 )
-from nucypher.blockchain.eth.signers.software import InMemorySigner, KeystoreSigner
+from nucypher.blockchain.eth.signers.software import KeystoreSigner
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.cli.config import GroupGeneralConfig
 from nucypher.config.characters import (
@@ -40,15 +37,6 @@ from nucypher.config.constants import (
 from nucypher.crypto.ferveo import dkg
 from nucypher.crypto.keystore import Keystore
 from nucypher.network.nodes import TEACHER_NODES
-from nucypher.policy.conditions.auth.evm import EvmAuth
-from nucypher.policy.conditions.context import USER_ADDRESS_CONTEXT
-from nucypher.policy.conditions.evm import RPCCondition
-from nucypher.policy.conditions.lingo import (
-    ConditionLingo,
-    ConditionType,
-    ReturnValueTest,
-)
-from nucypher.policy.conditions.time import TimeCondition
 from nucypher.policy.payment import SubscriptionManagerPayment
 from nucypher.utilities.emitters import StdoutEmitter
 from nucypher.utilities.endpoint import RPCEndpoint
@@ -585,157 +573,6 @@ def basic_auth_file(temp_dir_path):
 @pytest.fixture(scope="module")
 def mock_rest_middleware():
     return MockRestMiddleware(eth_endpoint=TEST_ETH_PROVIDER_URI)
-
-
-#
-# Conditions
-#
-
-
-@pytest.fixture(scope="session")
-def conditions_test_data():
-    test_conditions = Path(__file__).parent / "data" / "test_conditions.json"
-    with open(test_conditions, "r") as file:
-        data = json.loads(file.read())
-    for name, condition in data.items():
-        if condition.get("chain"):
-            condition["chain"] = TESTERCHAIN_CHAIN_ID
-    return data
-
-
-@pytest.fixture
-def time_condition():
-    condition = TimeCondition(
-        chain=TESTERCHAIN_CHAIN_ID, return_value_test=ReturnValueTest(">", 0)
-    )
-    return condition
-
-
-@pytest.fixture
-def compound_blocktime_lingo():
-    return {
-        "version": ConditionLingo.VERSION,
-        "condition": {
-            "conditionType": ConditionType.COMPOUND.value,
-            "operator": "and",
-            "operands": [
-                {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 0, "comparator": ">"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-                {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {
-                        "value": 99999999999999999,
-                        "comparator": "<",
-                    },
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-                {
-                    "conditionType": ConditionType.TIME.value,
-                    "returnValueTest": {"value": 0, "comparator": ">"},
-                    "method": "blocktime",
-                    "chain": TESTERCHAIN_CHAIN_ID,
-                },
-            ],
-        },
-    }
-
-
-@pytest.fixture
-def rpc_condition():
-    condition = RPCCondition(
-        method="eth_getBalance",
-        chain=TESTERCHAIN_CHAIN_ID,
-        return_value_test=ReturnValueTest("==", Web3.to_wei(1_000_000, "ether")),
-        parameters=[USER_ADDRESS_CONTEXT],
-    )
-    return condition
-
-
-@pytest.fixture(scope="function")
-def valid_eip712_auth_message():
-    signer = Account.create()
-    account = signer.address
-
-    data = {
-        "primaryType": "Wallet",
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "salt", "type": "bytes32"},
-            ],
-            "Wallet": [
-                {"name": "address", "type": "string"},
-                {"name": "blockNumber", "type": "uint256"},
-                {"name": "blockHash", "type": "bytes32"},
-                {"name": "signatureText", "type": "string"},
-            ],
-        },
-        "domain": {
-            "name": "tDec",
-            "version": "1",
-            "chainId": 80001,
-            "salt": "0x3e6365d35fd4e53cbc00b080b0742b88f8b735352ea54c0534ed6a2e44a83ff0",
-        },
-        "message": {
-            "address": f"{account}",
-            "blockNumber": 28117088,
-            "blockHash": "0x104dfae58be4a9b15d59ce447a565302d5658914f1093f10290cd846fbe258b7",
-            "signatureText": f"I'm the owner of address {account} as of block number 28117088",
-        },
-    }
-    signable_message = encode_typed_data(full_message=data)
-    signature = signer.sign_message(signable_message=signable_message)
-
-    auth_message = {
-        "signature": f"{signature.signature.hex()}",
-        "address": f"{account}",
-        "scheme": "EIP712",
-        "typedData": data,
-    }
-
-    return auth_message
-
-
-@pytest.fixture
-def valid_eip4361_auth_message_factory():
-    def _valid_eip4361_auth_message():
-        signer = InMemorySigner()
-        siwe_message_data = {
-            "domain": "login.xyz",
-            "address": f"{signer.accounts[0]}",
-            "statement": "Sign-In With Ethereum Example Statement",
-            "uri": "https://login.xyz",
-            "version": "1",
-            "nonce": "bTyXgcQxn2htgkjJn",
-            "chain_id": 1,
-            "issued_at": f"{maya.now().iso8601()}",
-        }
-        siwe_message = SiweMessage(**siwe_message_data).prepare_message()
-        _message_hash, signature = signer.sign_message_eip191(
-            account=signer.accounts[0], message=siwe_message.encode()
-        )
-        auth_message = {
-            "signature": f"{signature.hex()}",
-            "address": f"{signer.accounts[0]}",
-            "scheme": f"{EvmAuth.AuthScheme.EIP4361.value}",
-            "typedData": f"{siwe_message}",
-        }
-
-        return auth_message
-
-    return _valid_eip4361_auth_message
-
-
-@pytest.fixture
-def valid_eip4361_auth_message(valid_eip4361_auth_message_factory):
-    return valid_eip4361_auth_message_factory()
 
 
 @pytest.fixture(scope="session", autouse=True)
