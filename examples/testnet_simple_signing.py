@@ -32,8 +32,9 @@ from nucypher.blockchain.eth import domains
 from nucypher.blockchain.eth.agents import SigningCoordinatorAgent
 from nucypher.blockchain.eth.registry import ContractRegistry
 from nucypher.characters.lawful import Bob
-from nucypher.policy.conditions.auth.evm import EIP1271Auth
 from nucypher.utilities.logging import GlobalLoggerSettings
+
+EIP1271_MAGIC_VALUE_BYTES = b"\x16&\xbaz"  # 0x1626ba7e
 
 LOG_LEVEL = "debug"
 GlobalLoggerSettings.set_log_level(log_level_name=LOG_LEVEL)
@@ -125,7 +126,7 @@ def validate_responses_with_cohort_eth_multisig(
         er1271_contract.functions.isValidSignature(
             responses[0].hash, b"".join([r.signature for r in responses])
         ).call()
-        == EIP1271Auth.MAGIC_VALUE_BYTES
+        == EIP1271_MAGIC_VALUE_BYTES
     )
     print(
         f"✓ Signatures validated by multisig contract on ETH-Sepolia: {multisig_address}"

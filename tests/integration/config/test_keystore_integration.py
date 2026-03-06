@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import ANY
 
 import pytest
@@ -22,7 +23,8 @@ from nucypher.crypto.powers import (
     TLSHostingPower,
 )
 from nucypher.network.server import ProxyRESTServer
-from nucypher.policy.conditions.lingo import ConditionLingo, ConditionType
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from nucypher.policy.payment import SubscriptionManagerPayment
 from nucypher.utilities.networking import LOOPBACK_ADDRESS
 from tests.constants import (
@@ -182,15 +184,15 @@ def test_ritualist(temp_dir_path, testerchain, accounts, dkg_public_key):
     ritual_id = 23
     # Use actual decryption request
     plaintext = b"Records break when you don't"  # Jordan branch ad tagline
-    CONDITIONS = {
-        "version": ConditionLingo.VERSION,
-        "condition": {
-            "conditionType": ConditionType.TIME.value,
-            "returnValueTest": {"value": 0, "comparator": ">"},
-            "method": "blocktime",
-            "chain": TESTERCHAIN_CHAIN_ID,
-        },
-    }
+    _wasm_path = (
+        Path(__file__).parents[2]
+        / "fixtures"
+        / "conditions"
+        / "out"
+        / "always_true.wasm"
+    )
+    _wasm_cond = WasmCondition(wasm_bytes=_wasm_path.read_bytes(), name="always-true")
+    CONDITIONS = ConditionLingo(_wasm_cond).to_dict()
 
     # create enrico
     enrico = Enrico(encrypting_key=dkg_public_key, signer=InMemorySigner())

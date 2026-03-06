@@ -1,3 +1,4 @@
+from pathlib import Path
 from time import time
 from typing import List
 from unittest.mock import PropertyMock, patch
@@ -16,23 +17,19 @@ from nucypher.blockchain.eth.signers.software import InMemorySigner
 from nucypher.characters.lawful import Enrico, Ursula
 from nucypher.crypto.keypairs import RitualisticKeypair
 from nucypher.crypto.powers import RitualisticPower
-from nucypher.policy.conditions.lingo import ConditionLingo, ConditionType
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from nucypher.utilities.warnings import render_ferveo_key_mismatch_warning
-from tests.constants import TESTERCHAIN_CHAIN_ID
 from tests.mock.coordinator import MockCoordinatorAgent
 from tests.mock.interfaces import MockBlockchain
 
 # The message to encrypt and its conditions
 PLAINTEXT = "peace at dawn"
-CONDITIONS = {
-    "version": ConditionLingo.VERSION,
-    "condition": {
-        "conditionType": ConditionType.TIME.value,
-        "returnValueTest": {"value": 0, "comparator": ">"},
-        "method": "blocktime",
-        "chain": TESTERCHAIN_CHAIN_ID,
-    },
-}
+_WASM_PATH = (
+    Path(__file__).parents[2] / "fixtures" / "conditions" / "out" / "always_true.wasm"
+)
+_wasm_condition = WasmCondition(wasm_bytes=_WASM_PATH.read_bytes(), name="always-true")
+CONDITIONS = ConditionLingo(_wasm_condition).to_dict()
 
 
 # TODO: Get these from the contract

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from nucypher.blockchain.eth import domains
@@ -8,11 +10,15 @@ from nucypher.characters.chaotic import (
     ThisBobAlwaysFails,
 )
 from nucypher.characters.lawful import Ursula
-from nucypher.policy.conditions.lingo import ConditionLingo, ConditionType
+from nucypher.policy.conditions.lingo import ConditionLingo
+from nucypher.policy.conditions.wasm.conditions import WasmCondition
 from tests.constants import (
     MOCK_ETH_PROVIDER_URI,
     MOCK_REGISTRY_FILEPATH,
-    TESTERCHAIN_CHAIN_ID,
+)
+
+_WASM_PATH = (
+    Path(__file__).parents[2] / "fixtures" / "conditions" / "out" / "always_true.wasm"
 )
 
 
@@ -27,15 +33,10 @@ def _attempt_decryption(BobClass, plaintext, testerchain):
         polygon_endpoint=MOCK_ETH_PROVIDER_URI,
     )
 
-    definitely_false_condition = {
-        "version": ConditionLingo.VERSION,
-        "condition": {
-            "conditionType": ConditionType.TIME.value,
-            "chain": TESTERCHAIN_CHAIN_ID,
-            "method": "blocktime",
-            "returnValueTest": {"comparator": "<", "value": 0},
-        },
-    }
+    wasm_condition = WasmCondition(
+        wasm_bytes=_WASM_PATH.read_bytes(), name="always-true"
+    )
+    definitely_false_condition = ConditionLingo(wasm_condition).to_dict()
 
     threshold_message_kit = enrico.encrypt_for_dkg(
         plaintext=plaintext,
